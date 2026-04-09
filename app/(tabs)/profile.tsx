@@ -1,16 +1,14 @@
-import {
-  ScrollView,
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Text,
-  Image as RNImage,
-  Dimensions,
-  ImageSourcePropType,
-} from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'expo-router';
+import {
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 interface MenuItem {
   id: string;
@@ -91,6 +89,51 @@ const MenuItemRow = ({ item, onPress }: { item: MenuItem; onPress?: () => void }
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { user, isLoggedIn, logout } = useAuth();
+
+  if (!isLoggedIn) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors.light.background }]}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.emptyContentContainer}
+        >
+          {/* Empty State */}
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyIcon}>👤</Text>
+            <Text style={[styles.emptyTitle, { color: Colors.light.text }]}>
+              Not Logged In
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              Sign in to your account to view your profile, orders, and more
+            </Text>
+
+            {/* Login Button */}
+            <TouchableOpacity
+              style={styles.loginButton}
+              onPress={() => router.push('/login')}
+            >
+              <Text style={styles.loginButtonText}>Login</Text>
+            </TouchableOpacity>
+
+            {/* Signup Button */}
+            <TouchableOpacity
+              style={styles.signupButton}
+              onPress={() => router.push('/signup')}
+            >
+              <Text style={styles.signupButtonText}>Create Account</Text>
+            </TouchableOpacity>
+
+            {/* Footer */}
+            <View style={styles.emptyFooter}>
+              <Text style={styles.footerText}>MADE WITH ❤️ FOR ONWAY</Text>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
@@ -110,7 +153,7 @@ export default function ProfileScreen() {
         <View style={styles.profileSection}>
           <View style={styles.profileAvatarContainer}>
             <View style={styles.profileAvatar}>
-              <Text style={styles.avatarText}>👤</Text>
+              <Text style={styles.avatarText}>{user?.avatar}</Text>
             </View>
             <View style={styles.memberBadge}>
               <Text style={styles.memberBadgeText}>⭐</Text>
@@ -118,16 +161,16 @@ export default function ProfileScreen() {
           </View>
 
           <Text style={[styles.profileName, { color: Colors.light.text }]}>
-            Felix Henderson
+            {user?.name}
           </Text>
-          <Text style={styles.profileEmail}>felix.h@onway.delivery</Text>
+          <Text style={styles.profileEmail}>{user?.email}</Text>
 
           <View style={styles.statsContainer}>
             <View style={styles.statBadge}>
-              <Text style={styles.statBadgeText}>Cold Member</Text>
+              <Text style={styles.statBadgeText}>Member</Text>
             </View>
             <View style={styles.statBadge}>
-              <Text style={styles.statBadgeText}>124 Orders</Text>
+              <Text style={styles.statBadgeText}>Active User</Text>
             </View>
           </View>
         </View>
@@ -164,7 +207,13 @@ export default function ProfileScreen() {
 
         {/* Logout */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.logoutItem}>
+          <TouchableOpacity
+            style={styles.logoutItem}
+            onPress={() => {
+              logout();
+              router.replace('/(tabs)/profile');
+            }}
+          >
             <View style={styles.menuItemLeft}>
               <Text style={styles.menuIcon}>🚪</Text>
               <Text style={styles.logoutText}>Logout</Text>
@@ -190,12 +239,71 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollView: {
+    flex: 1,
+  },
+  emptyContentContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 40,
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+  },
+  emptyIcon: {
+    fontSize: 80,
+    marginBottom: 24,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  loginButton: {
+    backgroundColor: '#35aeff',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    alignItems: 'center',
+    marginBottom: 12,
+    width: '100%',
+  },
+  loginButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  signupButton: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    alignItems: 'center',
+    marginBottom: 32,
+    width: '100%',
+    borderWidth: 2,
+    borderColor: '#35aeff',
+  },
+  signupButtonText: {
+    color: '#35aeff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  emptyFooter: {
+    alignItems: 'center',
+    marginTop: 24,
+  },
   topBar: {
     height: 12,
     backgroundColor: '#ffffff',
-  },
-  scrollView: {
-    flex: 1,
   },
   header: {
     flexDirection: 'row',
