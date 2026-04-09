@@ -55,11 +55,10 @@ export default function TabLayout() {
           tabBarBadge: 0,
         }}
       />
-        <Tabs.Screen
+      <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          href: null,
         }}
       />
       

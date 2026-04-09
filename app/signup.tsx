@@ -300,17 +300,11 @@ export default function SignupScreen() {
             <View style={styles.divider} />
           </View>
 
-          {/* Social Signup */}
-          <View style={styles.socialContainer}>
-            <TouchableOpacity style={styles.socialButton} disabled={loading}>
-              <Text style={styles.socialIcon}>🔵</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton} disabled={loading}>
-              <Text style={styles.socialIcon}>🔴</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton} disabled={loading}>
-              <Text style={styles.socialIcon}>⚫</Text>
-            </TouchableOpacity>
+          {/* Google Signup Info */}
+          <View style={styles.googleInfoContainer}>
+            <Text style={styles.googleInfoText}>
+              🔍 Google Sign-In requires a custom development build
+            </Text>
           </View>
         </View>
 
@@ -511,6 +505,43 @@ const styles = StyleSheet.create({
   },
   socialIcon: {
     fontSize: 24,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 20,
+  },
+  googleButtonDisabled: {
+    opacity: 0.7,
+  },
+  googleButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  googleIcon: {
+    fontSize: 20,
+  },
+  googleInfoContainer: {
+    backgroundColor: '#FFF3CD',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  googleInfoText: {
+    color: '#856404',
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   loginContainer: {
     flexDirection: 'row',
