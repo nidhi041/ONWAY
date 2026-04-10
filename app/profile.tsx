@@ -2,13 +2,13 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
 import {
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 interface MenuItem {
@@ -247,7 +247,7 @@ export default function ProfileScreen() {
             style={styles.logoutItem}
             onPress={() => {
               logout();
-              router.replace('/(tabs)/profile');
+              router.replace('/profile');
             }}
           >
             <View style={styles.menuItemLeft}>

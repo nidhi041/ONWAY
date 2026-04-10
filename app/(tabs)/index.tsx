@@ -4,18 +4,18 @@ import { useCart } from '@/context/CartContext';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    FlatList,
-    ImageBackground,
-    ImageSourcePropType,
-    Image as RNImage,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  ImageBackground,
+  ImageSourcePropType,
+  Image as RNImage,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface Category {
@@ -187,7 +187,7 @@ export default function HomeScreen() {
         <View style={styles.brandSection}>
           <Text style={styles.logo}>⚡</Text>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={() => router.push('/login')}>
+          <TouchableOpacity onPress={() => router.push('/profile')}>
             <Text style={styles.profileIcon}>👤</Text>
           </TouchableOpacity>
         </View>
