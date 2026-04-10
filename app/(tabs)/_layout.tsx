@@ -3,8 +3,12 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useCart } from '@/context/CartContext';
 
 export default function TabLayout() {
+  const { cartItems } = useCart();
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <Tabs
       screenOptions={{
@@ -52,7 +56,7 @@ export default function TabLayout() {
         options={{
           title: 'Cart',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="cart.fill" color={color} />,
-          tabBarBadge: 0,
+          tabBarBadge: cartCount > 0 ? cartCount : undefined,
         }}
       />
         <Tabs.Screen
