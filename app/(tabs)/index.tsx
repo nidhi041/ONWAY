@@ -2,20 +2,21 @@ import { MOCK_BEST_SELLERS, MOCK_TRENDING_PRODUCTS, Product } from '@/constants/
 import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  ImageBackground,
-  ImageSourcePropType,
-  Image as RNImage,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    FlatList,
+    ImageBackground,
+    ImageSourcePropType,
+    Image as RNImage,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 interface Category {
@@ -138,12 +139,26 @@ const PromoBanner = () => (
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { addToCart } = useCart();
+  const { addToCart, cartItems } = useCart();
   const [categories, setCategories] = useState<Category[]>([]);
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'delivery' | 'offers'>('delivery');
+  const slideAnim = useRef(new Animated.Value(100)).current;
+
+  const totalCartItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalCartPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartHasItems = cartItems.length > 0;
+
+  useEffect(() => {
+    Animated.spring(slideAnim, {
+      toValue: cartHasItems ? 0 : 100,
+      useNativeDriver: true,
+      tension: 80,
+      friction: 10,
+    }).start();
+  }, [cartHasItems]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -182,7 +197,11 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
       <View style={styles.topBar} />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: cartHasItems ? 100 : 20 }}
+      >
         {/* Logo and Profile */}
         <View style={styles.brandSection}>
           <Text style={styles.logo}>⚡</Text>
@@ -302,6 +321,24 @@ export default function HomeScreen() {
         {/* Bottom spacer for nav bar */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Blinkit-style Cart Bar */}
+      <Animated.View style={[styles.cartBar, { transform: [{ translateY: slideAnim }] }]}>
+        <TouchableOpacity style={styles.cartBarInner} onPress={() => router.push('/(tabs)/cart')}>
+          <View style={styles.cartBarLeft}>
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{totalCartItems}</Text>
+            </View>
+            <Text style={styles.cartBarLabel}>
+              {totalCartItems} {totalCartItems === 1 ? 'item' : 'items'} in cart
+            </Text>
+          </View>
+          <View style={styles.cartBarRight}>
+            <Text style={styles.cartBarPrice}>₹{totalCartPrice.toFixed(0)}</Text>
+            <Text style={styles.cartBarAction}>View Cart →</Text>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
@@ -583,4 +620,39 @@ const styles = StyleSheet.create({
   bottomSpacer: {
     height: 20,
   },
+  // Cart bar (Blinkit style)
+  cartBar: {
+    position: 'absolute',
+    bottom: 70,
+    left: 16,
+    right: 16,
+    backgroundColor: '#1a1a2e',
+    borderRadius: 16,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  cartBarInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  cartBarLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cartBadge: {
+    backgroundColor: '#2196F3',
+    borderRadius: 8,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cartBadgeText: { color: 'white', fontSize: 13, fontWeight: '700' },
+  cartBarLabel: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  cartBarRight: { alignItems: 'flex-end' },
+  cartBarPrice: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  cartBarAction: { color: '#35aeff', fontSize: 12, fontWeight: '600', marginTop: 2 },
 });
