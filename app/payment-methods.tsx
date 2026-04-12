@@ -6,10 +6,10 @@ import {
   Text,
   Modal,
   TextInput,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
