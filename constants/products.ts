@@ -10,10 +10,12 @@ export interface Product {
   rating: number;
   reviews?: number;
   deliveryTime: number;
-  image: ImageSourcePropType;
+  image?: ImageSourcePropType;
+  imageUrl?: string; // Firestore product image URL
   description?: string;
   warranty?: string | null;
   returnDays?: number;
+  stock?: number;
 }
 
 // All Products Data
