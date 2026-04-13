@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
     Alert,
+    ActivityIndicator,
     Modal,
     SafeAreaView,
     ScrollView,
@@ -12,40 +13,14 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useAddresses } from '@/hooks/useFirestore';
 
-interface Address {
-  id: string;
-  label: string; // Home, Work, Other
+interface AddressForm {
+  type: 'home' | 'work';
+  name: string;
   address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  phoneNumber: string;
-  isDefault: boolean;
+  phone: string;
 }
-
-const DEFAULT_ADDRESSES: Address[] = [
-  {
-    id: '1',
-    label: 'Home',
-    address: '123 Main Street',
-    city: 'New Delhi',
-    state: 'Delhi',
-    pincode: '110001',
-    phoneNumber: '+91 9876543210',
-    isDefault: true,
-  },
-  {
-    id: '2',
-    label: 'Work',
-    address: '456 Business Avenue',
-    city: 'Bangalore',
-    state: 'Karnataka',
-    pincode: '560001',
-    phoneNumber: '+91 9876543211',
-    isDefault: false,
-  },
-];
 
 const AddressCard = ({
   address,
@@ -53,8 +28,8 @@ const AddressCard = ({
   onDelete,
   onSetDefault,
 }: {
-  address: Address;
-  onEdit: (address: Address) => void;
+  address: any;
+  onEdit: (address: any) => void;
   onDelete: (id: string) => void;
   onSetDefault: (id: string) => void;
 }) => (
@@ -62,7 +37,7 @@ const AddressCard = ({
     <View style={styles.cardHeader}>
       <View style={styles.labelSection}>
         <View style={styles.labelBadge}>
-          <Text style={styles.labelText}>{address.label}</Text>
+          <Text style={styles.labelText}>{address.type.toUpperCase()}</Text>
         </View>
         {address.isDefault && (
           <View style={styles.defaultBadge}>
@@ -70,19 +45,14 @@ const AddressCard = ({
           </View>
         )}
       </View>
-      <TouchableOpacity style={styles.menuButton}>
-        <Text style={styles.menuIcon}>⋮</Text>
-      </TouchableOpacity>
     </View>
 
     <View style={styles.addressDetails}>
       <Text style={[styles.addressText, { color: Colors.light.text }]}>
-        {address.address}
+        {address.name}
       </Text>
-      <Text style={styles.cityText}>
-        {address.city}, {address.state} {address.pincode}
-      </Text>
-      <Text style={styles.phoneText}>{address.phoneNumber}</Text>
+      <Text style={styles.cityText}>{address.address}</Text>
+      <Text style={styles.phoneText}>{address.phone}</Text>
     </View>
 
     <View style={styles.actionsRow}>
@@ -112,74 +82,64 @@ const AddressCard = ({
 
 export default function SavedAddressesScreen() {
   const router = useRouter();
-  const [addresses, setAddresses] = useState<Address[]>(DEFAULT_ADDRESSES);
+  const { addresses, loading, addAddress, deleteAddress, updateAddress, setDefaultAddress } = useAddresses();
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [formData, setFormData] = useState({
-    label: '',
+  const [editingAddress, setEditingAddress] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState<AddressForm>({
+    type: 'home',
+    name: '',
     address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    phoneNumber: '',
+    phone: '',
   });
 
   const handleAddAddress = () => {
     setEditingAddress(null);
     setFormData({
-      label: '',
+      type: 'home',
+      name: '',
       address: '',
-      city: '',
-      state: '',
-      pincode: '',
-      phoneNumber: '',
+      phone: '',
     });
     setModalVisible(true);
   };
 
-  const handleEditAddress = (address: Address) => {
+  const handleEditAddress = (address: any) => {
     setEditingAddress(address);
     setFormData({
-      label: address.label,
+      type: address.type,
+      name: address.name,
       address: address.address,
-      city: address.city,
-      state: address.state,
-      pincode: address.pincode,
-      phoneNumber: address.phoneNumber,
+      phone: address.phone,
     });
     setModalVisible(true);
   };
 
-  const handleSaveAddress = () => {
-    if (
-      !formData.label ||
-      !formData.address ||
-      !formData.city ||
-      !formData.pincode ||
-      !formData.phoneNumber
-    ) {
+  const handleSaveAddress = async () => {
+    if (!formData.name || !formData.address || !formData.phone) {
       Alert.alert('Error', 'Please fill all fields');
       return;
     }
 
-    if (editingAddress) {
-      setAddresses(
-        addresses.map((addr) =>
-          addr.id === editingAddress.id
-            ? { ...addr, ...formData }
-            : addr
-        )
-      );
-    } else {
-      const newAddress: Address = {
-        id: Date.now().toString(),
-        ...formData,
-        isDefault: addresses.length === 0,
-      };
-      setAddresses([...addresses, newAddress]);
+    setIsSaving(true);
+    try {
+      if (editingAddress) {
+        await updateAddress(editingAddress.id, {
+          ...formData,
+          isDefault: editingAddress.isDefault,
+        } as any);
+      } else {
+        await addAddress({
+          ...formData,
+          isDefault: addresses.length === 0,
+        } as any);
+      }
+      setModalVisible(false);
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to save address');
+    } finally {
+      setIsSaving(false);
     }
-
-    setModalVisible(false);
   };
 
   const handleDeleteAddress = (id: string) => {
@@ -188,28 +148,50 @@ export default function SavedAddressesScreen() {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => {
-          const newAddresses = addresses.filter((addr) => addr.id !== id);
-          if (newAddresses.length > 0 && addresses.find((a) => a.id === id)?.isDefault) {
-            newAddresses[0].isDefault = true;
+        onPress: async () => {
+          try {
+            await deleteAddress(id);
+          } catch (error) {
+            Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete address');
           }
-          setAddresses(newAddresses);
         },
       },
     ]);
   };
 
-  const handleSetDefault = (id: string) => {
-    setAddresses(
-      addresses.map((addr) => ({
-        ...addr,
-        isDefault: addr.id === id,
-      }))
-    );
+  const handleSetDefault = async (id: string) => {
+    try {
+      await setDefaultAddress(id);
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to set default address');
+    }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors.light.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#35aeff" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors.light.background }]}>
+      <View style={styles.topBar} />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backButton}>{'<'}</Text>
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: Colors.light.text }]}>
+          Saved Addresses
+        </Text>
+        <View style={{ width: 24 }} />
+      </View>
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.contentContainer}>
           {addresses.length > 0 ? (
@@ -250,7 +232,7 @@ export default function SavedAddressesScreen() {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={() => !isSaving && setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -258,33 +240,34 @@ export default function SavedAddressesScreen() {
               <Text style={[styles.modalTitle, { color: Colors.light.text }]}>
                 {editingAddress ? 'Edit Address' : 'Add New Address'}
               </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.closeButton}>✕</Text>
+              <TouchableOpacity onPress={() => !isSaving && setModalVisible(false)} disabled={isSaving}>
+                <Text style={styles.closeButton}>{isSaving ? '' : '✕'}</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.formContainer}>
               <View style={styles.formGroup}>
                 <Text style={[styles.label, { color: Colors.light.text }]}>
-                  Address Label
+                  Address Type
                 </Text>
                 <View style={styles.labelOptionsContainer}>
-                  {['Home', 'Work', 'Other'].map((label) => (
+                  {['home', 'work'].map((type: string) => (
                     <TouchableOpacity
-                      key={label}
+                      key={type}
                       style={[
                         styles.labelOption,
-                        formData.label === label && styles.labelOptionActive,
+                        formData.type === type && styles.labelOptionActive,
                       ]}
-                      onPress={() => setFormData({ ...formData, label })}
+                      onPress={() => setFormData({ ...formData, type: type as 'home' | 'work' })}
+                      disabled={isSaving}
                     >
                       <Text
                         style={[
                           styles.labelOptionText,
-                          formData.label === label && styles.labelOptionTextActive,
+                          formData.type === type && styles.labelOptionTextActive,
                         ]}
                       >
-                        {label}
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -293,64 +276,35 @@ export default function SavedAddressesScreen() {
 
               <View style={styles.formGroup}>
                 <Text style={[styles.label, { color: Colors.light.text }]}>
+                  Recipient Name
+                </Text>
+                <TextInput
+                  style={[styles.input, { color: Colors.light.text }]}
+                  placeholder="Enter recipient name"
+                  placeholderTextColor="#999"
+                  value={formData.name}
+                  onChangeText={(text) =>
+                    setFormData({ ...formData, name: text })
+                  }
+                  editable={!isSaving}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: Colors.light.text }]}>
                   Full Address
                 </Text>
                 <TextInput
                   style={[styles.input, { color: Colors.light.text }]}
-                  placeholder="Enter your address"
+                  placeholder="Enter your complete address"
                   placeholderTextColor="#999"
                   value={formData.address}
                   onChangeText={(text) =>
                     setFormData({ ...formData, address: text })
                   }
-                />
-              </View>
-
-              <View style={styles.formRow}>
-                <View style={[styles.formGroup, styles.formGroupHalf]}>
-                  <Text style={[styles.label, { color: Colors.light.text }]}>
-                    City
-                  </Text>
-                  <TextInput
-                    style={[styles.input, { color: Colors.light.text }]}
-                    placeholder="City"
-                    placeholderTextColor="#999"
-                    value={formData.city}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, city: text })
-                    }
-                  />
-                </View>
-
-                <View style={[styles.formGroup, styles.formGroupHalf]}>
-                  <Text style={[styles.label, { color: Colors.light.text }]}>
-                    State
-                  </Text>
-                  <TextInput
-                    style={[styles.input, { color: Colors.light.text }]}
-                    placeholder="State"
-                    placeholderTextColor="#999"
-                    value={formData.state}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, state: text })
-                    }
-                  />
-                </View>
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={[styles.label, { color: Colors.light.text }]}>
-                  Pincode
-                </Text>
-                <TextInput
-                  style={[styles.input, { color: Colors.light.text }]}
-                  placeholder="Pincode"
-                  placeholderTextColor="#999"
-                  keyboardType="number-pad"
-                  value={formData.pincode}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, pincode: text })
-                  }
+                  multiline
+                  numberOfLines={3}
+                  editable={!isSaving}
                 />
               </View>
 
@@ -363,15 +317,20 @@ export default function SavedAddressesScreen() {
                   placeholder="Phone Number"
                   placeholderTextColor="#999"
                   keyboardType="phone-pad"
-                  value={formData.phoneNumber}
+                  value={formData.phone}
                   onChangeText={(text) =>
-                    setFormData({ ...formData, phoneNumber: text })
+                    setFormData({ ...formData, phone: text })
                   }
+                  editable={!isSaving}
                 />
               </View>
 
-              <TouchableOpacity style={styles.submitButton} onPress={handleSaveAddress}>
-                <Text style={styles.submitButtonText}>Save Address</Text>
+              <TouchableOpacity style={styles.submitButton} onPress={handleSaveAddress} disabled={isSaving}>
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Save Address</Text>
+                )}
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -385,6 +344,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  topBar: {
+    height: 8,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  backButton: {
+    fontSize: 24,
+    color: Colors.light.text,
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
   scrollView: {
     flex: 1,
   },
@@ -396,16 +377,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   addressCard: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -439,13 +417,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontWeight: '700',
-  },
-  menuButton: {
-    padding: 4,
-  },
-  menuIcon: {
-    fontSize: 16,
-    color: '#999',
   },
   addressDetails: {
     marginBottom: 12,
@@ -532,13 +503,18 @@ const styles = StyleSheet.create({
   bottomSpacing: {
     height: 20,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#ffffff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -549,6 +525,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   modalTitle: {
     fontSize: 18,
@@ -564,13 +542,6 @@ const styles = StyleSheet.create({
   formGroup: {
     marginBottom: 16,
   },
-  formRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  formGroupHalf: {
-    flex: 1,
-  },
   label: {
     fontSize: 14,
     fontWeight: '600',
@@ -581,12 +552,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   labelOptionsContainer: {
     flexDirection: 'row',
@@ -597,15 +565,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   labelOptionActive: {
-    backgroundColor: '#35aeff',
+    backgroundColor: '#e3f2fd',
     borderColor: '#35aeff',
   },
   labelOptionText: {
@@ -614,7 +579,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   labelOptionTextActive: {
-    color: 'white',
+    color: '#35aeff',
   },
   submitButton: {
     backgroundColor: '#35aeff',

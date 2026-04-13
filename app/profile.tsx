@@ -3,13 +3,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
 import {
     Image,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface MenuItem {
   id: string;
@@ -101,7 +101,7 @@ export default function ProfileScreen() {
         router.push('/saved-addresses');
         break;
       case '3':
-        // Handle Payment Methods
+        router.push('/payment-methods');
         break;
       case '4':
         router.push('/notifications');

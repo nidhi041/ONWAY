@@ -24,6 +24,7 @@ export default function RootLayout() {
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="signup" options={{ headerShown: false }} />
+            <Stack.Screen name="payment-methods" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="dark" backgroundColor="#ffffff00" />
         </ThemeProvider>

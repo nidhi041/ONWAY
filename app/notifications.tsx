@@ -2,76 +2,29 @@ import { Colors } from '@/constants/theme';
 import { useState } from 'react';
 import {
     Alert,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
+    ActivityIndicator,
 } from 'react-native';
-
-interface Notification {
-  id: string;
-  type: 'order' | 'offer' | 'delivery' | 'promotion';
-  title: string;
-  message: string;
-  timestamp: string;
-  isRead: boolean;
-  icon: string;
-}
-
-const DEFAULT_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    type: 'delivery',
-    title: 'Delivery Update',
-    message: 'Your order is on the way. Expected delivery: Today by 6 PM',
-    timestamp: '2 hours ago',
-    isRead: false,
-    icon: '🚚',
-  },
-  {
-    id: '2',
-    type: 'offer',
-    title: 'Special Offer',
-    message: 'Get 30% off on all beverages today. Use code: DRINK30',
-    timestamp: '5 hours ago',
-    isRead: false,
-    icon: '🎉',
-  },
-  {
-    id: '3',
-    type: 'promotion',
-    title: 'Flash Sale',
-    message: 'Limited time offers on snacks and drinks. Shop now!',
-    timestamp: '1 day ago',
-    isRead: true,
-    icon: '⚡',
-  },
-  {
-    id: '4',
-    type: 'order',
-    title: 'Order Confirmed',
-    message: 'Your order #12345 has been confirmed. Order ID: ONW-12345',
-    timestamp: '2 days ago',
-    isRead: true,
-    icon: '✅',
-  },
-];
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNotifications } from '@/hooks/useFirestore';
 
 const NotificationCard = ({
   notification,
   onDelete,
   onMarkAsRead,
 }: {
-  notification: Notification;
+  notification: any;
   onDelete: (id: string) => void;
   onMarkAsRead: (id: string) => void;
 }) => (
   <TouchableOpacity
     style={[
       styles.notificationCard,
-      !notification.isRead && styles.notificationCardUnread,
+      !notification.read && styles.notificationCardUnread,
     ]}
     onPress={() => onMarkAsRead(notification.id)}
   >
@@ -86,15 +39,14 @@ const NotificationCard = ({
             style={[
               styles.notificationTitle,
               { color: Colors.light.text },
-              !notification.isRead && styles.titleBold,
+              !notification.read && styles.titleBold,
             ]}
           >
             {notification.title}
           </Text>
-          {!notification.isRead && <View style={styles.unreadDot} />}
+          {!notification.read && <View style={styles.unreadDot} />}
         </View>
-        <Text style={styles.notificationMessage}>{notification.message}</Text>
-        <Text style={styles.timestamp}>{notification.timestamp}</Text>
+        <Text style={styles.notificationMessage}>{notification.description}</Text>
       </View>
 
       <TouchableOpacity
@@ -108,9 +60,7 @@ const NotificationCard = ({
 );
 
 export default function NotificationsScreen() {
-  const [notifications, setNotifications] = useState<Notification[]>(
-    DEFAULT_NOTIFICATIONS
-  );
+  const { notifications, loading, markAsRead, deleteNotification } = useNotifications();
 
   const handleDelete = (id: string) => {
     Alert.alert('Delete Notification', 'Remove this notification?', [
@@ -119,24 +69,22 @@ export default function NotificationsScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
-          setNotifications(notifications.filter((n) => n.id !== id));
+          deleteNotification(id);
         },
       },
     ]);
   };
 
   const handleMarkAsRead = (id: string) => {
-    setNotifications(
-      notifications.map((n) =>
-        n.id === id ? { ...n, isRead: true } : n
-      )
-    );
+    markAsRead(id);
   };
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const handleMarkAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, isRead: true })));
+  const handleMarkAllAsRead = async () => {
+    for (const notif of notifications.filter(n => !n.read)) {
+      await markAsRead(notif.id);
+    }
   };
 
   const handleClearAll = () => {
@@ -145,48 +93,73 @@ export default function NotificationsScreen() {
       {
         text: 'Delete All',
         style: 'destructive',
-        onPress: () => {
-          setNotifications([]);
+        onPress: async () => {
+          for (const notif of notifications) {
+            await deleteNotification(notif.id);
+          }
         },
       },
     ]);
   };
 
+  if (loading) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: Colors.light.background }]}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#35aeff" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: Colors.light.background }]}
     >
+      <View style={styles.topBar} />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: Colors.light.text }]}>
+          Notifications
+        </Text>
+      </View>
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.contentContainer}>
           {/* Top Info Bar */}
-          <View style={styles.infoBar}>
-            <View>
-              <Text style={[styles.totalText, { color: Colors.light.text }]}>
-                {notifications.length} Notifications
-              </Text>
-              {unreadCount > 0 && (
-                <Text style={styles.unreadText}>{unreadCount} unread</Text>
-              )}
+          {notifications.length > 0 && (
+            <View style={styles.infoBar}>
+              <View>
+                <Text style={[styles.totalText, { color: Colors.light.text }]}>
+                  {notifications.length} Notifications
+                </Text>
+                {unreadCount > 0 && (
+                  <Text style={styles.unreadText}>{unreadCount} unread</Text>
+                )}
+              </View>
+              <View style={styles.actionButtons}>
+                {unreadCount > 0 && (
+                  <TouchableOpacity
+                    style={styles.infoButton}
+                    onPress={handleMarkAllAsRead}
+                  >
+                    <Text style={styles.infoButtonText}>Mark all read</Text>
+                  </TouchableOpacity>
+                )}
+                {notifications.length > 0 && (
+                  <TouchableOpacity
+                    style={[styles.infoButton, styles.infoButtonDanger]}
+                    onPress={handleClearAll}
+                  >
+                    <Text style={styles.infoButtonTextDanger}>Clear all</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-            <View style={styles.actionButtons}>
-              {unreadCount > 0 && (
-                <TouchableOpacity
-                  style={styles.infoButton}
-                  onPress={handleMarkAllAsRead}
-                >
-                  <Text style={styles.infoButtonText}>Mark all read</Text>
-                </TouchableOpacity>
-              )}
-              {notifications.length > 0 && (
-                <TouchableOpacity
-                  style={[styles.infoButton, styles.infoButtonDanger]}
-                  onPress={handleClearAll}
-                >
-                  <Text style={styles.infoButtonTextDanger}>Clear all</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
+          )}
 
           {/* Notifications List */}
           {notifications.length > 0 ? (

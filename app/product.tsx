@@ -1,12 +1,13 @@
-import { getProductById, Product } from '@/constants/products';
+import { Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useProducts } from '@/hooks/useFirestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
     Animated,
     Dimensions,
-    ImageSourcePropType,
     Image as RNImage,
     ScrollView,
     StyleSheet,
@@ -15,60 +16,34 @@ import {
     View
 } from 'react-native';
 
-interface RelatedProduct {
-  id: string;
-  name: string;
-  price: number;
-  rating: number;
-  image: ImageSourcePropType;
-}
-
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const MOCK_RELATED_PRODUCTS: RelatedProduct[] = [
-  {
-    id: '1',
-    name: 'Travel Case',
-    price: 24.99,
-    rating: 4.5,
-    image: require('@/assets/ProductImage/paracetamol.jpg'),
-  },
-  {
-    id: '2',
-    name: 'Fast Charger',
-    price: 19.99,
-    rating: 4.7,
-    image: require('@/assets/ProductImage/sarash milk.avif'),
-  },
-  {
-    id: '3',
-    name: 'Audio Cable',
-    price: 9.99,
-    rating: 4.3,
-    image: require('@/assets/ProductImage/Hand senitizer.jpg'),
-  },
-];
-
-const RelatedProductCard = ({ product }: { product: RelatedProduct }) => (
-  <TouchableOpacity style={styles.relatedCard}>
-    <RNImage source={product.image} style={styles.relatedImage} />
-    <Text style={styles.relatedName}>{product.name}</Text>
-    <View style={styles.relatedPriceRow}>
-      <Text style={styles.relatedPrice}>₹{product.price}</Text>
-      <View style={styles.relatedRating}>
-        <Text style={styles.relatedRatingText}>⭐ {product.rating}</Text>
+const RelatedProductCard = ({ product }: { product: Product }) => {
+  const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
+  return (
+    <TouchableOpacity style={styles.relatedCard}>
+      <RNImage source={imageSource} style={styles.relatedImage} />
+      <Text style={styles.relatedName}>{product.name}</Text>
+      <View style={styles.relatedPriceRow}>
+        <Text style={styles.relatedPrice}>₹{product.price}</Text>
+        <View style={styles.relatedRating}>
+          <Text style={styles.relatedRatingText}>⭐ {product.rating}</Text>
+        </View>
       </View>
-    </View>
-  </TouchableOpacity>
-);
+    </TouchableOpacity>
+  );
+};
 
 export default function ProductDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { addToCart, cartItems } = useCart();
+  const { products: allProducts, loading: productsLoading } = useProducts();
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const slideAnim = useRef(new Animated.Value(100)).current;
 
   const totalCartItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -85,20 +60,30 @@ export default function ProductDetailScreen() {
     }).start();
   }, [cartHasItems]);
 
+  // Fetch product and related products from Firestore
   useEffect(() => {
+    setLoading(true);
     const productId = params.id as string;
-    if (productId) {
-      const foundProduct = getProductById(productId);
-      if (foundProduct) setProduct(foundProduct);
+    if (productId && allProducts.length > 0) {
+      const foundProduct = allProducts.find(p => p.id === productId);
+      if (foundProduct) {
+        setProduct(foundProduct);
+        // Get related products from same category
+        const related = allProducts
+          .filter(p => p.category === foundProduct.category && p.id !== productId)
+          .slice(0, 3);
+        setRelatedProducts(related);
+      }
     }
-  }, [params.id]);
+    setLoading(false);
+  }, [params.id, allProducts]);
 
-  if (!product) {
+  if (loading || !product) {
     return (
       <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
-        <Text style={{ color: Colors.light.text, textAlign: 'center', marginTop: 50 }}>
-          Product not found
-        </Text>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#35aeff" />
+        </View>
       </View>
     );
   }
@@ -152,7 +137,10 @@ export default function ProductDetailScreen() {
 
         {/* Product Image */}
         <View style={styles.imageContainer}>
-          <RNImage source={product.image} style={styles.productImage} />
+          <RNImage 
+            source={product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif')} 
+            style={styles.productImage} 
+          />
           <View style={styles.imageDot} />
         </View>
 
@@ -248,7 +236,7 @@ export default function ProductDetailScreen() {
               style={styles.relatedScroll}
               contentContainerStyle={styles.relatedContent}
             >
-              {MOCK_RELATED_PRODUCTS.map((item) => (
+              {relatedProducts.map((item) => (
                 <RelatedProductCard key={item.id} product={item} />
               ))}
             </ScrollView>
@@ -291,6 +279,11 @@ export default function ProductDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   scrollView: { flex: 1 },
   topBar: { height: 12, backgroundColor: '#ffffff' },
   header: {
