@@ -1,9 +1,11 @@
-import { PRODUCTS, Product } from '@/constants/products';
+import { Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useProducts } from '@/hooks/useFirestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Dimensions,
     FlatList,
     Image as RNImage,
@@ -19,58 +21,51 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 type SortOption = 'popularity' | 'price-low' | 'price-high' | 'rating';
 type FilterOption = 'all' | 'price-low-high' | 'rating-40' | 'fast-deliver';
 
-const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPress?: () => void; onAddToCart?: () => void }) => (
-  <TouchableOpacity style={styles.productCard} onPress={onPress}>
-    <View style={styles.imageContainer}>
-      <RNImage source={product.image} style={styles.productImage} />
-      <View style={styles.ratingBadge}>
-        <Text style={styles.ratingBadgeText}>⭐ {product.rating}</Text>
+const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPress?: () => void; onAddToCart?: () => void }) => {
+  const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
+  return (
+    <TouchableOpacity style={styles.productCard} onPress={onPress}>
+      <View style={styles.imageContainer}>
+        <RNImage source={imageSource} style={styles.productImage} />
+        <View style={styles.ratingBadge}>
+          <Text style={styles.ratingBadgeText}>⭐ {product.rating}</Text>
+        </View>
       </View>
-    </View>
-    <View style={styles.productInfo}>
-      <Text style={styles.productBrand}>{product.brand}</Text>
-      <Text style={styles.productName}>{product.name}</Text>
-      <View style={styles.priceRow}>
-        <Text style={styles.price}>₹{product.price}</Text>
-        {product.originalPrice && (
-          <Text style={styles.originalPrice}>₹{product.originalPrice}</Text>
-        )}
+      <View style={styles.productInfo}>
+        <Text style={styles.productBrand}>{product.brand}</Text>
+        <Text style={styles.productName}>{product.name}</Text>
+        <View style={styles.priceRow}>
+          <Text style={styles.price}>₹{product.price}</Text>
+          {product.originalPrice && (
+            <Text style={styles.originalPrice}>₹{product.originalPrice}</Text>
+          )}
+        </View>
+        <Text style={styles.taxText}>Incl. Taxes</Text>
+        <TouchableOpacity style={styles.addButton} onPress={onAddToCart}>
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
       </View>
-      <Text style={styles.taxText}>Incl. Taxes</Text>
-      <TouchableOpacity style={styles.addButton} onPress={onAddToCart}>
-        <Text style={styles.addButtonText}>+</Text>
-      </TouchableOpacity>
-    </View>
-  </TouchableOpacity>
-);
+    </TouchableOpacity>
+  );
+};
 
 export default function CategoryScreen() {
   const router = useRouter();
   const { addToCart } = useCart();
   const params = useLocalSearchParams();
-  const categoryName = (params.name as string) || 'Medicine';
-
-  const [activeFilter, setActiveFilter] = useState<FilterOption>('all');
-  const [sortBy, setSortBy] = useState<SortOption>('popularity');
+  const categoryName = (params.name as string) || 'grocery';
+  const { products: allProducts, loading } = useProducts();
+  const [activeFilter] = useState<FilterOption>('all');
+  const [sortBy] = useState<SortOption>('popularity');
   const [products, setProducts] = useState<Product[]>([]);
 
-  // Load products filtered by category
+  // Filter products by category from Firestore
   useEffect(() => {
-    const filteredProducts = PRODUCTS.filter(
+    const filteredProducts = allProducts.filter(
       (product) => product.category.toLowerCase() === categoryName.toLowerCase()
     );
     setProducts(filteredProducts);
-  }, [categoryName]);
-
-  const handleFilterChange = useCallback((filter: FilterOption) => {
-    setActiveFilter(filter);
-    // TODO: Implement filter logic based on selected filter
-  }, []);
-
-  const handleSortChange = useCallback((sort: SortOption) => {
-    setSortBy(sort);
-    // TODO: Implement sort logic based on selected sort
-  }, []);
+  }, [allProducts, categoryName]);
 
   const filterOptions: FilterOption[] = ['all', 'price-low-high', 'rating-40', 'fast-deliver'];
   const filterLabels: Record<FilterOption, string> = {
@@ -91,85 +86,90 @@ export default function CategoryScreen() {
   return (
     <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
       <View style={styles.topBar} />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backButton}>{'<'}</Text>
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: Colors.light.text }]}>
-            {categoryName}
-          </Text>
-          <TouchableOpacity>
-            <Text style={styles.filterIcon}>☰</Text>
-          </TouchableOpacity>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#35aeff" />
         </View>
+      ) : (
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={styles.backButton}>{'<'}</Text>
+            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: Colors.light.text }]}>
+              {categoryName.charAt(0).toUpperCase() + categoryName.slice(1)}
+            </Text>
+            <TouchableOpacity>
+              <Text style={styles.filterIcon}>☰</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Filter Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filtersScroll}
-          contentContainerStyle={styles.filtersContent}
-        >
-          {filterOptions.map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterChip,
-                activeFilter === filter && styles.filterChipActive,
-              ]}
-              onPress={() => handleFilterChange(filter)}
-            >
-              <Text
+          {/* Filter Chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filtersScroll}
+            contentContainerStyle={styles.filtersContent}
+          >
+            {filterOptions.map((filter) => (
+              <TouchableOpacity
+                key={filter}
                 style={[
-                  styles.filterChipText,
-                  activeFilter === filter && styles.filterChipTextActive,
+                  styles.filterChip,
+                  activeFilter === filter && styles.filterChipActive,
                 ]}
               >
-                {filterLabels[filter]}
-              </Text>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    activeFilter === filter && styles.filterChipTextActive,
+                  ]}
+                >
+                  {filterLabels[filter]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Showing items count */}
+          <View style={styles.countContainer}>
+            <Text style={[styles.countText, { color: Colors.light.text }]}>
+              Showing {products.length} items
+            </Text>
+          </View>
+
+          {/* Sort dropdown */}
+          <View style={styles.sortContainer}>
+            <TouchableOpacity style={styles.sortButton}>
+              <Text style={styles.sortLabel}>Sort by: {sortLabels[sortBy]}</Text>
+              <Text style={styles.sortDropdown}>▼</Text>
             </TouchableOpacity>
-          ))}
+          </View>
+
+          {/* Product Grid */}
+          <View style={styles.gridContainer}>
+            <FlatList
+              data={products}
+              renderItem={({ item }) => (
+                <ProductCard
+                  product={item}
+                  onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
+                  onAddToCart={() => addToCart(item)}
+                />
+              )}
+              keyExtractor={(item) => item.id}
+              numColumns={2}
+              columnWrapperStyle={styles.gridRow}
+              scrollEnabled={false}
+              contentContainerStyle={styles.gridContent}
+            />
+          </View>
+
+          {/* Bottom spacer for nav bar */}
+          <View style={styles.bottomSpacer} />
         </ScrollView>
-
-        {/* Showing items count */}
-        <View style={styles.countContainer}>
-          <Text style={[styles.countText, { color: Colors.light.text }]}>
-            Showing {products.length} items
-          </Text>
-        </View>
-
-        {/* Sort dropdown */}
-        <View style={styles.sortContainer}>
-          <TouchableOpacity style={styles.sortButton}>
-            <Text style={styles.sortLabel}>Sort by: {sortLabels[sortBy]}</Text>
-            <Text style={styles.sortDropdown}>▼</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Product Grid */}
-        <View style={styles.gridContainer}>
-          <FlatList
-            data={products}
-            renderItem={({ item }) => (
-              <ProductCard
-                product={item}
-                onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
-                onAddToCart={() => addToCart(item)}
-              />
-            )}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            columnWrapperStyle={styles.gridRow}
-            scrollEnabled={false}
-            contentContainerStyle={styles.gridContent}
-          />
-        </View>
-
-        {/* Bottom spacer for nav bar */}
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
+      )}
     </View>
   );
 }
@@ -177,6 +177,11 @@ export default function CategoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,

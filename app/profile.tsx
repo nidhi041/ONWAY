@@ -2,12 +2,12 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
 import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -101,7 +101,7 @@ export default function ProfileScreen() {
         router.push('/saved-addresses');
         break;
       case '3':
-        // Handle Payment Methods
+        router.push('/payment-methods');
         break;
       case '4':
         router.push('/notifications');
@@ -247,7 +247,7 @@ export default function ProfileScreen() {
             style={styles.logoutItem}
             onPress={() => {
               logout();
-              router.replace('/(tabs)/profile');
+              router.replace('/profile');
             }}
           >
             <View style={styles.menuItemLeft}>

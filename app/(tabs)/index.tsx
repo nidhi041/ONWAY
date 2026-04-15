@@ -1,6 +1,7 @@
-import { MOCK_BEST_SELLERS, MOCK_TRENDING_PRODUCTS, Product } from '@/constants/products';
+import { Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useProducts } from '@/hooks/useFirestore';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -35,50 +36,7 @@ const MOCK_CATEGORIES: Category[] = [
   { id: '5', name: 'Baby', icon: require('@/assets/images/babyCare.png') },
 ];
 
-// API service functions
-const apiService = {
-  // Fetch categories from API
-  fetchCategories: async (): Promise<Category[]> => {
-    try {
-      // TODO: Replace with actual API endpoint
-      // const response = await fetch('https://api.onway.com/categories');
-      // const data = await response.json();
-      // return data;
-      return MOCK_CATEGORIES;
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      return MOCK_CATEGORIES;
-    }
-  },
 
-  // Fetch trending products
-  fetchTrendingProducts: async (): Promise<Product[]> => {
-    try {
-      // TODO: Replace with actual API endpoint
-      // const response = await fetch('https://api.onway.com/products/trending');
-      // const data = await response.json();
-      // return data;
-      return MOCK_TRENDING_PRODUCTS;
-    } catch (error) {
-      console.error('Error fetching trending products:', error);
-      return MOCK_TRENDING_PRODUCTS;
-    }
-  },
-
-  // Fetch best sellers
-  fetchBestSellers: async (): Promise<Product[]> => {
-    try {
-      // TODO: Replace with actual API endpoint
-      // const response = await fetch('https://api.onway.com/products/best-sellers');
-      // const data = await response.json();
-      // return data;
-      return MOCK_BEST_SELLERS;
-    } catch (error) {
-      console.error('Error fetching best sellers:', error);
-      return MOCK_BEST_SELLERS;
-    }
-  },
-};
 
 // Category Item Component
 const CategoryItem = ({ category, onPress }: { category: Category; onPress?: () => void }) => (
@@ -91,12 +49,14 @@ const CategoryItem = ({ category, onPress }: { category: Category; onPress?: () 
 );
 
 // Product Card Component
-const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPress?: () => void; onAddToCart?: () => void }) => (
-  <TouchableOpacity style={styles.productCard} onPress={onPress}>
-    <RNImage
-      source={product.image}
-      style={styles.productImage}
-    />
+const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPress?: () => void; onAddToCart?: () => void }) => {
+  const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
+  return (
+    <TouchableOpacity style={styles.productCard} onPress={onPress}>
+      <RNImage
+        source={imageSource}
+        style={styles.productImage}
+      />
     <View style={styles.deliveryTimeBadge}>
       <Text style={styles.deliveryTimeText}>{product.deliveryTime} mins</Text>
     </View>
@@ -117,7 +77,8 @@ const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPr
       </TouchableOpacity>
     </View>
   </TouchableOpacity>
-);
+  );
+};
 
 // Promotional Banner Component
 const PromoBanner = () => (
@@ -140,16 +101,15 @@ const PromoBanner = () => (
 export default function HomeScreen() {
   const router = useRouter();
   const { addToCart, cartItems } = useCart();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
-  const [bestSellers, setBestSellers] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { products: allProducts, loading: productsLoading } = useProducts();
+  const [categories] = useState<Category[]>(MOCK_CATEGORIES);
   const [activeTab, setActiveTab] = useState<'delivery' | 'offers'>('delivery');
   const slideAnim = useRef(new Animated.Value(100)).current;
 
   const totalCartItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const totalCartPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartHasItems = cartItems.length > 0;
+  const loading = productsLoading;
 
   useEffect(() => {
     Animated.spring(slideAnim, {
@@ -159,30 +119,6 @@ export default function HomeScreen() {
       friction: 10,
     }).start();
   }, [cartHasItems]);
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [categoriesData, trendingData, sellersData] = await Promise.all([
-        apiService.fetchCategories(),
-        apiService.fetchTrendingProducts(),
-        apiService.fetchBestSellers(),
-      ]);
-
-      setCategories(categoriesData);
-      setTrendingProducts(trendingData);
-      setBestSellers(sellersData);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Load data on component mount
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   if (loading) {
     return (
@@ -206,7 +142,9 @@ export default function HomeScreen() {
         <View style={styles.brandSection}>
           <Text style={styles.logo}>⚡</Text>
           <View style={{ flex: 1 }} />
-          <Text style={styles.profileIcon}>👤</Text>
+          <TouchableOpacity onPress={() => router.push('/profile')}>
+            <Text style={styles.profileIcon}>👤</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
@@ -277,7 +215,7 @@ export default function HomeScreen() {
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
-            data={trendingProducts}
+            data={allProducts.slice(0, Math.ceil(allProducts.length / 2))}
             renderItem={({ item }) => (
               <ProductCard
                 product={item}
@@ -302,7 +240,7 @@ export default function HomeScreen() {
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
-            data={bestSellers}
+            data={allProducts.slice(Math.ceil(allProducts.length / 2))}
             renderItem={({ item }) => (
               <ProductCard
                 product={item}

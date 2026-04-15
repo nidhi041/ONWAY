@@ -59,11 +59,10 @@ export default function TabLayout() {
           tabBarBadge: cartCount > 0 ? cartCount : undefined,
         }}
       />
-        <Tabs.Screen
+      <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          href: null,
         }}
       />
       
