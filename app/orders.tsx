@@ -1,11 +1,10 @@
-import { PRODUCTS } from '@/constants/products';
 import { Colors } from '@/constants/theme';
+import { useOrders } from '@/context/OrdersContext';
+import { Order } from '@/services/ordersService';
 import { useRouter } from 'expo-router';
 import {
+    ActivityIndicator,
     FlatList,
-    Image,
-    ImageSourcePropType,
-    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -13,213 +12,173 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-interface OrderItem {
-  id: string;
-  name: string;
-  image: ImageSourcePropType;
-  price: number;
-}
+const OrderCard = ({ order, onPress }: { order: Order; onPress: () => void }) => {
+  // Format date from timestamp
+  const getFormattedDate = (timestamp: any) => {
+    if (!timestamp) return 'N/A';
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    } catch {
+      return 'N/A';
+    }
+  };
 
-interface Order {
-  id: string;
-  title: string;
-  price: number;
-  date: string;
-  time: string;
-  status: 'Arrived' | 'In Transit' | 'Processing' | 'Cancelled';
-  deliveryTime: number; // in minutes
-  items: OrderItem[];
-}
+  const getFormattedTime = (timestamp: any) => {
+    if (!timestamp) return 'N/A';
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return 'N/A';
+    }
+  };
 
-const MOCK_ORDERS: Order[] = [
-  {
-    id: '1',
-    title: 'Arrived in 10 minutes',
-    price: 297,
-    date: '19 Feb',
-    time: '8:30 pm',
-    status: 'Arrived',
-    deliveryTime: 10,
-    items: [
-      {
-        id: 'item1',
-        name: PRODUCTS[1].name,
-        image: PRODUCTS[5].image,
-        price: 297,
-      },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Arrived in 7 minutes',
-    price: 509,
-    date: '14 Feb',
-    time: '4:15 pm',
-    status: 'Arrived',
-    deliveryTime: 7,
-    items: [
-      {
-        id: 'item1',
-        name: PRODUCTS[0].name,
-        image: PRODUCTS[0].image,
-        price: 509,
-      },
-    ],
-  },
-  {
-    id: '3',
-    title: 'Arrived in 8 minutes',
-    price: 741,
-    date: '04 Sep 2025',
-    time: '',
-    status: 'Arrived',
-    deliveryTime: 8,
-    items: [
-      {
-        id: 'item1',
-        name: PRODUCTS[0].name,
-        image: PRODUCTS[0].image,
-        price: 150,
-      },
-      {
-        id: 'item2',
-        name: PRODUCTS[1].name,
-        image: PRODUCTS[4].image,
-        price: 200,
-      },
-      {
-        id: 'item3',
-        name: PRODUCTS[2]?.name || 'Product',
-        image: PRODUCTS[2]?.image || PRODUCTS[1].image,
-        price: 150,
-      },
-      {
-        id: 'item4',
-        name: PRODUCTS[3]?.name || 'Product',
-        image: PRODUCTS[3]?.image || PRODUCTS[1].image,
-        price: 150,
-      },
-      {
-        id: 'item5',
-        name: PRODUCTS[4]?.name || 'Product',
-        image: PRODUCTS[4]?.image || PRODUCTS[1].image,
-        price: 91,
-      },
-    ],
-  },
-  {
-    id: '4',
-    title: 'Arrived in 7 minutes',
-    price: 267,
-    date: '22 Aug 2025',
-    time: '',
-    status: 'Arrived',
-    deliveryTime: 7,
-    items: [
-      {
-        id: 'item1',
-        name: PRODUCTS[1].name,
-        image: PRODUCTS[2].image,
-        price: 267,
-      },
-    ],
-  },
-];
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return '#4CAF50';
+      case 'in-transit':
+        return '#FF9800';
+      case 'confirmed':
+      case 'processing':
+        return '#2196F3';
+      case 'cancelled':
+        return '#F44336';
+      default:
+        return '#999';
+    }
+  };
 
-const OrderItemImage = ({ item }: { item: OrderItem }) => (
-  <View style={styles.itemImageContainer}>
-    <View style={styles.itemImageBox}>
-      <Image
-        source={item.image}
-        style={styles.itemImageSource}
-        resizeMode="cover"
-      />
-    </View>
-  </View>
-);
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Confirmed';
+      case 'processing':
+        return 'Processing';
+      case 'shipped':
+        return 'Shipped';
+      case 'in-transit':
+        return 'In Transit';
+      case 'delivered':
+        return 'Delivered';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  };
 
-const OrderCard = ({ order }: { order: Order }) => (
-  <View style={styles.orderCard}>
-    {/* Top Section with Status and Menu */}
-    <View style={styles.cardTopSection}>
-      <View style={styles.statusSection}>
-        <View style={styles.statusBadge}>
-          <Text style={styles.checkmark}>✓</Text>
-        </View>
-        <View style={styles.titleSection}>
+  return (
+    <TouchableOpacity style={styles.orderCard} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.orderHeader}>
+        <View style={styles.orderInfo}>
           <Text style={[styles.orderTitle, { color: Colors.light.text }]}>
-            {order.title}
+            {order.items.length} {order.items.length === 1 ? 'Item' : 'Items'}
           </Text>
-          <Text style={styles.orderMeta}>
-            ₹{order.price} • {order.date}{order.time ? `, ${order.time}` : ''}
+          <Text style={styles.orderDate}>
+            {getFormattedDate(order.createdAt)} • {getFormattedTime(order.createdAt)}
           </Text>
+        </View>
+        <View style={styles.orderPrice}>
+          <Text style={styles.priceAmount}>₹{order.totalAmount.toFixed(2)}</Text>
         </View>
       </View>
-      <TouchableOpacity style={styles.menuButton}>
-        <Text style={styles.menuIcon}>⋮</Text>
-      </TouchableOpacity>
-    </View>
 
-    {/* Product Images Section */}
-    <View style={styles.productsSection}>
-      <FlatList
-        data={order.items}
-        renderItem={({ item }) => <OrderItemImage item={item} />}
-        keyExtractor={(item) => item.id}
-        horizontal
-        scrollEnabled={order.items.length > 4}
-        showsHorizontalScrollIndicator={false}
-      />
-    </View>
+      {/* Order Items Preview */}
+      <View style={styles.itemsPreview}>
+        {order.items.slice(0, 3).map((item, idx) => (
+          <Text key={idx} style={styles.itemName} numberOfLines={1}>
+            {item.name}
+            {item.quantity > 1 && ` x${item.quantity}`}
+            {idx < order.items.length - 1 && ', '}
+          </Text>
+        ))}
+        {order.items.length > 3 && (
+          <Text style={styles.itemName}>and {order.items.length - 3} more...</Text>
+        )}
+      </View>
 
-    {/* Action Buttons */}
-    <View style={styles.actionsSection}>
-      <TouchableOpacity style={styles.actionButtonGreen}>
-        <Text style={styles.actionTextGreen}>Reorder</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.actionButtonGreen}>
-        <Text style={styles.actionTextGreen}>Details</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-);
+      {/* Order Footer */}
+      <View style={styles.orderFooter}>
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: `${getStatusColor(order.status)}20` },
+          ]}
+        >
+          <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
+            {getStatusLabel(order.status)}
+          </Text>
+        </View>
+        <Text style={styles.viewDetails}>View Details →</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const { orders, isLoading, error } = useOrders();
+
+  const handleOrderPress = (orderId: string) => {
+    router.push(`/ordertracking?orderId=${orderId}`);
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors.light.background }]}>
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {MOCK_ORDERS.length > 0 ? (
-          <View style={styles.ordersContainer}>
-            {MOCK_ORDERS.map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
-          </View>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📦</Text>
-            <Text style={[styles.emptyTitle, { color: Colors.light.text }]}>
-              No Orders Yet
-            </Text>
-            <Text style={styles.emptySubtitle}>
-              Start shopping to create your first order
-            </Text>
-            <TouchableOpacity
-              style={styles.exploreButton}
-              onPress={() => router.push('/(tabs)/explore')}
-            >
-              <Text style={styles.exploreButtonText}>Explore Products</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: Colors.light.text }]}>My Orders</Text>
+        <Text style={styles.headerSubtitle}>{orders.length} orders</Text>
+      </View>
 
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
+      {/* Content */}
+      {isLoading ? (
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color="#2196F3" />
+          <Text style={[styles.loadingText, { color: Colors.light.text }]}>
+            Loading orders...
+          </Text>
+        </View>
+      ) : error ? (
+        <View style={styles.centerContent}>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={[styles.errorText, { color: Colors.light.text }]}>
+            {error}
+          </Text>
+        </View>
+      ) : orders.length === 0 ? (
+        <View style={styles.centerContent}>
+          <Text style={styles.emptyIcon}>📦</Text>
+          <Text style={[styles.emptyTitle, { color: Colors.light.text }]}>
+            No Orders Yet
+          </Text>
+          <Text style={styles.emptySubtitle}>
+            Start shopping and your orders will appear here
+          </Text>
+          <TouchableOpacity
+            style={styles.shopButton}
+            onPress={() => router.push('/(tabs)')}
+          >
+            <Text style={styles.shopButtonText}>Start Shopping</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={orders}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <OrderCard
+              order={item}
+              onPress={() => handleOrderPress(item.id)}
+            />
+          )}
+          scrollEnabled={true}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -228,121 +187,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 12,
-  },
-  ordersContainer: {
+  header: {
     paddingHorizontal: 16,
-    gap: 12,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  orderCard: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardTopSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  statusSection: {
-    flexDirection: 'row',
-    flex: 1,
-    gap: 12,
-  },
-  statusBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#C8E6C9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkmark: {
-    fontSize: 22,
-    color: '#4CAF50',
-    fontWeight: '700',
-  },
-  titleSection: {
-    flex: 1,
-  },
-  orderTitle: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 24,
     fontWeight: '700',
     marginBottom: 4,
   },
-  orderMeta: {
-    fontSize: 13,
+  headerSubtitle: {
+    fontSize: 12,
     color: '#999',
+    fontWeight: '500',
   },
-  menuButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  menuIcon: {
-    fontSize: 20,
-    color: '#999',
-  },
-  productsSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-  },
-  itemImageContainer: {
-    marginRight: 12,
-  },
-  itemImageBox: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  itemImageSource: {
-    width: '100%',
-    height: '100%',
-  },
-  actionsSection: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  actionButtonGreen: {
+  centerContent: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  actionTextGreen: {
-    color: 'white',
-    fontSize: 13,
-    fontWeight: '600',
+  loadingText: {
+    fontSize: 14,
+    marginTop: 12,
+    fontWeight: '500',
   },
-  emptyContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 60,
+  errorIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginHorizontal: 32,
+    fontWeight: '500',
   },
   emptyIcon: {
     fontSize: 64,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   emptyTitle: {
     fontSize: 18,
@@ -350,23 +233,92 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#999',
     textAlign: 'center',
+    marginHorizontal: 32,
     marginBottom: 24,
   },
-  exploreButton: {
-    backgroundColor: '#35aeff',
-    paddingHorizontal: 24,
+  shopButton: {
+    backgroundColor: '#2196F3',
+    borderRadius: 12,
+    paddingHorizontal: 32,
     paddingVertical: 12,
-    borderRadius: 8,
+    marginTop: 12,
   },
-  exploreButtonText: {
+  shopButtonText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  bottomSpacing: {
-    height: 40,
+  listContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  orderCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  orderInfo: {
+    flex: 1,
+  },
+  orderTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  orderDate: {
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '500',
+  },
+  orderPrice: {
+    alignItems: 'flex-end',
+  },
+  priceAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2196F3',
+  },
+  itemsPreview: {
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  itemName: {
+    fontSize: 11,
+    color: '#666',
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  orderFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  viewDetails: {
+    fontSize: 11,
+    color: '#2196F3',
+    fontWeight: '700',
   },
 });

@@ -1,16 +1,21 @@
-import {
-  ScrollView,
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Text,
-} from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
+import { createOrder, PaymentMethod, ShippingAddress } from '@/services/ordersService';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 type AddressType = 'home' | 'work';
-type PaymentMethod = 'upi' | 'cards' | 'cod' | 'netbanking';
+type PaymentMethodType = 'upi' | 'cards' | 'cod' | 'netbanking';
 
 interface Address {
   id: string;
@@ -22,7 +27,7 @@ interface Address {
 
 interface PaymentOption {
   id: string;
-  type: PaymentMethod;
+  type: PaymentMethodType;
   title: string;
   description: string;
   badge?: string;
@@ -150,14 +155,91 @@ const PaymentOptionCard = ({
 
 export default function CheckoutScreen() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(2); // 1: Address, 2: Payment, 3: Review
+  const { cartItems, clearCart } = useCart();
+  const { user } = useAuth();
+  const [currentStep, setCurrentStep] = useState(1); // 1: Address, 2: Payment, 3: Review
   const [selectedAddress, setSelectedAddress] = useState<string>('1');
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('upi');
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethodType>('upi');
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
-  const subtotal = 1249.0;
-  const deliveryFee = 0;
-  const taxes = 42.5;
-  const totalAmount = subtotal + taxes;
+  // Calculate totals from cart items
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const deliveryFee = 0; // Free delivery
+  const tax = Math.round(subtotal * 0.165 * 100) / 100; // 16.5% tax
+  const totalAmount = subtotal + deliveryFee + tax;
+
+  const handlePlaceOrder = async () => {
+    if (!user) {
+      Alert.alert('Error', 'Please login to place an order');
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      Alert.alert('Error', 'Your cart is empty');
+      return;
+    }
+
+    setIsPlacingOrder(true);
+    try {
+      // Get selected address
+      const selectedAddressData = MOCK_ADDRESSES.find((a) => a.id === selectedAddress);
+      if (!selectedAddressData) {
+        throw new Error('Please select a valid address');
+      }
+
+      // Format shipping address
+      const shippingAddress: ShippingAddress = {
+        id: selectedAddressData.id,
+        name: selectedAddressData.name,
+        address: selectedAddressData.address,
+        phone: selectedAddressData.phone,
+        type: selectedAddressData.type,
+      };
+
+      // Format payment method
+      const paymentMethod: PaymentMethod = {
+        id: selectedPayment,
+        type: selectedPayment,
+        label: PAYMENT_OPTIONS.find((p) => p.type === selectedPayment)?.title || selectedPayment,
+      };
+
+      // Create order in Firestore
+      const orderId = await createOrder(
+        user.id,
+        cartItems,
+        shippingAddress,
+        paymentMethod,
+        subtotal,
+        deliveryFee,
+        tax
+      );
+
+      // Clear cart after successful order
+      await clearCart();
+
+      Alert.alert('Success', 'Order placed successfully!', [
+        {
+          text: 'Track Order',
+          onPress: () => router.push(`/ordertracking?orderId=${orderId}`),
+        },
+      ]);
+    } catch (error: any) {
+      console.error('Error placing order:', error);
+      Alert.alert('Error', error.message || 'Failed to place order. Please try again.');
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
+        <Text style={{ color: Colors.light.text, textAlign: 'center', marginTop: 50 }}>
+          Please login to checkout
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
@@ -286,7 +368,18 @@ export default function CheckoutScreen() {
               <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>
                 Order Review
               </Text>
-              <Text style={styles.reviewText}>Ready to place your order!</Text>
+              <View style={styles.reviewBox}>
+                <Text style={styles.reviewLabel}>Items in Cart:</Text>
+                <Text style={[styles.reviewValue, { color: Colors.light.text }]}>
+                  {cartItems.length} items
+                </Text>
+                <Text style={styles.reviewLabel} style={{ marginTop: 12 }}>
+                  Delivery Address:
+                </Text>
+                <Text style={[styles.reviewValue, { color: Colors.light.text }]}>
+                  {MOCK_ADDRESSES.find((a) => a.id === selectedAddress)?.address}
+                </Text>
+              </View>
             </View>
           </View>
         )}
@@ -299,7 +392,7 @@ export default function CheckoutScreen() {
 
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: Colors.light.text }]}>
-              Items Total (3 items)
+              Items Total ({cartItems.length} {cartItems.length === 1 ? 'item' : 'items'})
             </Text>
             <Text style={[styles.summaryValue, { color: Colors.light.text }]}>
               ₹{subtotal.toFixed(2)}
@@ -321,7 +414,7 @@ export default function CheckoutScreen() {
               Taxes & Charges
             </Text>
             <Text style={[styles.summaryValue, { color: Colors.light.text }]}>
-              ₹{taxes.toFixed(2)}
+              ₹{tax.toFixed(2)}
             </Text>
           </View>
 
@@ -353,7 +446,7 @@ export default function CheckoutScreen() {
             <View>
               <Text style={styles.deliveryTimeLabel}>EXPRESS DELIVERY</Text>
               <Text style={[styles.deliveryTimeText, { color: Colors.light.text }]}>
-                Arriving in 18-24 mins
+                Arriving in 10-15 mins
               </Text>
             </View>
           </View>
@@ -367,15 +460,49 @@ export default function CheckoutScreen() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {/* Place Order Button */}
+      {/* Action Container */}
       <View style={styles.actionContainer}>
-        <TouchableOpacity
-          style={styles.placeOrderButton}
-          onPress={() => router.push('/ordertracking')}
-        >
-          <Text style={styles.placeOrderText}>Place Order</Text>
-          <Text style={styles.placeOrderArrow}> →</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          {currentStep > 1 && (
+            <TouchableOpacity
+              style={[styles.button, styles.secondaryButton]}
+              onPress={() => setCurrentStep(currentStep - 1)}
+            >
+              <Text style={styles.secondaryButtonText}>Back</Text>
+            </TouchableOpacity>
+          )}
+          {currentStep < 3 ? (
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.primaryButton,
+                currentStep > 1 && { flex: 1, marginLeft: 8 },
+              ]}
+              onPress={() => setCurrentStep(currentStep + 1)}
+            >
+              <Text style={styles.primaryButtonText}>Next</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.placeOrderButton,
+                { flex: currentStep > 1 ? 1 : undefined, marginLeft: currentStep > 1 ? 8 : 0 },
+              ]}
+              onPress={handlePlaceOrder}
+              disabled={isPlacingOrder}
+            >
+              {isPlacingOrder ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <>
+                  <Text style={styles.placeOrderText}>Place Order</Text>
+                  <Text style={styles.placeOrderArrow}> →</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -613,6 +740,23 @@ const styles = StyleSheet.create({
     color: '#2196F3',
     fontWeight: '700',
   },
+  reviewBox: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  reviewLabel: {
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  reviewValue: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   reviewText: {
     fontSize: 12,
     color: '#999',
@@ -732,7 +876,7 @@ const styles = StyleSheet.create({
     color: '#2196F3',
   },
   bottomSpacing: {
-    height: 80,
+    height: 100,
   },
   actionContainer: {
     paddingHorizontal: 16,
@@ -740,13 +884,40 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
   },
-  placeOrderButton: {
-    backgroundColor: '#2196F3',
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  button: {
     borderRadius: 12,
     paddingVertical: 14,
-    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  primaryButton: {
+    backgroundColor: '#2196F3',
+    flex: 1,
+  },
+  primaryButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    borderWidth: 2,
+    borderColor: '#2196F3',
+    backgroundColor: 'transparent',
+  },
+  secondaryButtonText: {
+    color: '#2196F3',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  placeOrderButton: {
+    backgroundColor: '#2196F3',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   placeOrderText: {
     color: 'white',
