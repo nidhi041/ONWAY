@@ -4,26 +4,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to read and write their own user document
+    // Allow users to read and write their own user document and nested collections
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
     
-    // Allow public read for products (optional)
-    match /products/{document=**} {
-      allow read: if true;
-      allow write: if request.auth.uid != null;
-    }
-    
-    // Allow users to read and write their own cart
-    match /carts/{userId} {
+    // Allow users to read and write their own cart (nested under users)
+    match /users/{userId}/cart/{document=**} {
       allow read, write: if request.auth.uid == userId;
     }
     
-    // Allow users to read their own orders
-    match /orders/{document=**} {
-      allow read: if request.auth.uid == resource.data.userId;
-      allow write: if request.auth.uid != null;
+    // Allow users to read and write their own orders (nested under users)
+    match /users/{userId}/orders/{document=**} {
+      allow read, write: if request.auth.uid == userId;
+    }
+    
+    // Allow public read for products
+    match /products/{document=**} {
+      allow read: if true;
+      allow write: if false; // Only backend can write
     }
   }
 }
+
