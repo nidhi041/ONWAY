@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ONWAY - Secure Payment</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 100%;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #1a1a2e;
+      font-size: 28px;
+      margin-bottom: 12px;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      color: #999;
+      font-size: 14px;
+      margin-bottom: 40px;
+      font-weight: 500;
+    }
+
+    .order-details {
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 14px;
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .detail-label {
+      color: #666;
+      font-weight: 600;
+    }
+
+    .detail-value {
+      color: #1a1a2e;
+      font-weight: 700;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 20px;
+      border-top: 2px solid #e0e0e0;
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    .total-label {
+      color: #1a1a2e;
+      font-weight: 800;
+    }
+
+    .total-value {
+      color: #22C55E;
+      font-weight: 800;
+      font-size: 24px;
+    }
+
+    .payment-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #0C63E4 0%, #0052CC 100%);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 30px;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(12, 99, 228, 0.3);
+    }
+
+    .payment-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(12, 99, 228, 0.4);
+    }
+
+    .payment-btn:active {
+      transform: translateY(0);
+    }
+
+    .payment-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .security-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #999;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0C63E4;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      background: #fff0f0;
+      color: #FF4757;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .payment-methods {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .method-badge {
+      padding: 12px;
+      background: #f0f8ff;
+      border: 2px solid #e0e8ff;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #0C63E4;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">💳</div>
+    <h1>Secure Payment</h1>
+    <p class="subtitle">Complete your purchase safely with Razorpay</p>
+
+    <div class="error-message" id="errorMessage"></div>
+
+    <div id="orderDetails" class="order-details">
+      <div class="detail-row">
+        <span class="detail-label">Order ID</span>
+        <span class="detail-value" id="orderId">Loading...</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Items</span>
+        <span class="detail-value" id="itemCount">-</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Subtotal</span>
+        <span class="detail-value" id="subtotal">₹0.00</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Delivery</span>
+        <span class="detail-value" id="delivery">FREE</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Tax</span>
+        <span class="detail-value" id="tax">₹0.00</span>
+      </div>
+      <div class="total-row">
+        <span class="total-label">Total Payable</span>
+        <span class="total-value" id="totalAmount">₹0.00</span>
+      </div>
+    </div>
+
+    <div class="payment-methods">
+      <div class="method-badge">💳 Cards</div>
+      <div class="method-badge">📱 UPI</div>
+      <div class="method-badge">🏦 Netbanking</div>
+      <div class="method-badge">📲 Wallets</div>
+    </div>
+
+    <button class="payment-btn" id="paymentBtn" onclick="initiatePayment()">
+      Complete Payment
+    </button>
+
+    <div class="security-badge">
+      🛡️ Your payment is 100% secure and encrypted
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Processing your payment...</p>
+    </div>
+  </div>
+
+  <script>
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const razorpayOrderId = urlParams.get('orderId');
+    const amount = urlParams.get('amount');
+    const keyId = urlParams.get('keyId');
+    const email = urlParams.get('email');
+    const phone = urlParams.get('phone');
+    const itemCount = urlParams.get('itemCount');
+    const subtotal = urlParams.get('subtotal');
+    const deliveryFee = urlParams.get('deliveryFee');
+    const tax = urlParams.get('tax');
+    const totalAmount = urlParams.get('totalAmount');
+    const userId = urlParams.get('userId');
+    const paymentMethod = urlParams.get('paymentMethod');
+
+    // Update UI with order details
+    document.getElementById('orderId').textContent = razorpayOrderId || 'N/A';
+    document.getElementById('itemCount').textContent = itemCount || '-';
+    document.getElementById('subtotal').textContent = `₹${subtotal || '0.00'}`;
+    document.getElementById('delivery').textContent = deliveryFee === '0' ? 'FREE' : `₹${deliveryFee || '0.00'}`;
+    document.getElementById('tax').textContent = `₹${tax || '0.00'}`;
+    document.getElementById('totalAmount').textContent = `₹${totalAmount || '0.00'}`;
+
+    function initiatePayment() {
+      const btn = document.getElementById('paymentBtn');
+      const loading = document.getElementById('loading');
+      const errorMsg = document.getElementById('errorMessage');
+
+      btn.disabled = true;
+      loading.style.display = 'block';
+      errorMsg.style.display = 'none';
+
+      // Razorpay payment options
+      const options = {
+        key: keyId,
+        order_id: razorpayOrderId,
+        amount: Math.round(totalAmount * 100), // Amount in paise
+        currency: 'INR',
+        name: 'ONWAY - Fast Delivery',
+        description: 'Order payment',
+        customer_notif: 1,
+        prefill: {
+          email: email || '',
+          contact: phone || '',
+        },
+        theme: {
+          color: '#0C63E4',
+        },
+        handler: function (response) {
+          handlePaymentSuccess(response);
+        },
+        modal: {
+          ondismiss: function () {
+            handlePaymentFailure({
+              code: 'CANCELLED',
+              description: 'Payment cancelled by user',
+            });
+          },
+        },
+      };
+
+      // Create Razorpay instance and open checkout
+      const rzp = new Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        handlePaymentFailure(response.error);
+      });
+
+      rzp.open();
+    }
+
+    function handlePaymentSuccess(response) {
+      const loading = document.getElementById('loading');
+      loading.innerHTML = '<div style="padding: 40px; text-align: center;"><div style="font-size: 48px; margin-bottom: 20px;">✅</div><h2 style="color: #22C55E; font-size: 24px; margin-bottom: 10px;">Payment Successful!</h2><p style="color: #999;">Your order is being processed...</p></div>';
+
+      // Send payment details to backend for verification
+      fetch('https://us-central1-onway-bd6e4.cloudfunctions.net/verifyPaymentSignature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          razorpayOrderId: response.razorpay_order_id,
+          razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
+          userId,
+          amount: totalAmount,
+          itemCount,
+          subtotal,
+          deliveryFee,
+          tax,
+          paymentMethod,
+        }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            // Payment verified, redirect back to app with success
+            setTimeout(() => {
+              // For web, redirect to success page
+              // For mobile app with deep linking, use the orderId
+              window.location.href = `onway://payment/success?orderId=${data.orderId}`;
+            }, 2000);
+          } else {
+            throw new Error(data.error || 'Verification failed');
+          }
+        })
+        .catch(err => {
+          console.error('Verification error:', err);
+          handlePaymentFailure({
+            code: 'VERIFICATION_FAILED',
+            description: err.message,
+          });
+        });
+    }
+
+    function handlePaymentFailure(error) {
+      const btn = document.getElementById('paymentBtn');
+      const loading = document.getElementById('loading');
+      const errorMsg = document.getElementById('errorMessage');
+
+      btn.disabled = false;
+      loading.style.display = 'none';
+      errorMsg.style.display = 'block';
+      errorMsg.textContent = `Payment failed: ${error.description || error.code || 'Unknown error'}`;
+
+      // Log failure to backend
+      fetch('https://us-central1-onway-bd6e4.cloudfunctions.net/logPaymentFailure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          razorpayOrderId,
+          errorCode: error.code,
+          errorDescription: error.description,
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch(err => console.error('Error logging failure:', err));
+    }
+  </script>
+</body>
+</html>

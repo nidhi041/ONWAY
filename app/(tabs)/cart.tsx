@@ -1,18 +1,18 @@
-import {
-  ScrollView,
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Image as RNImage,
-  Dimensions,
-  ImageSourcePropType,
-  Text,
-  TextInput,
-} from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+    Dimensions,
+    ImageSourcePropType,
+    Image as RNImage,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 interface CartItem {
   id: string;
@@ -301,8 +301,8 @@ const styles = StyleSheet.create({
   },
   clearAll: {
     fontSize: 12,
-    color: '#2196F3',
-    fontWeight: '600',
+    color: '#0C63E4',
+    fontWeight: '700',
   },
   deliverySection: {
     flexDirection: 'row',
@@ -567,9 +567,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   totalValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2196F3',
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#22C55E',
   },
   infoMessage: {
     marginHorizontal: 16,
@@ -603,10 +603,15 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   continueShopping: {
-    backgroundColor: '#2196F3',
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    backgroundColor: '#0C63E4',
+    borderRadius: 14,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    elevation: 3,
+    shadowColor: '#0C63E4',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   continueShoppingText: {
     color: 'white',
@@ -635,17 +640,22 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   checkoutButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 12,
+    backgroundColor: '#0C63E4',
+    borderRadius: 14,
     paddingVertical: 14,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#0C63E4',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   checkoutButtonText: {
     color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
   },
   checkoutArrow: {
     color: 'white',

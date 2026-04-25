@@ -2,6 +2,7 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { createOrder, PaymentMethod, ShippingAddress } from '@/services/ordersService';
+import { createRazorpayOrder, verifyPaymentSignature, logPaymentFailure } from '@/services/razorpayService';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -203,29 +204,89 @@ export default function CheckoutScreen() {
         label: PAYMENT_OPTIONS.find((p) => p.type === selectedPayment)?.title || selectedPayment,
       };
 
-      // Create order in Firestore
-      const orderId = await createOrder(
-        user.id,
+      // For COD, create order directly without Razorpay
+      if (selectedPayment === 'cod') {
+        const orderId = await createOrder(
+          user.id,
+          cartItems,
+          shippingAddress,
+          paymentMethod,
+          subtotal,
+          deliveryFee,
+          tax
+        );
+
+        await clearCart();
+
+        Alert.alert('Success', 'Order placed successfully! COD payment selected.', [
+          {
+            text: 'Track Order',
+            onPress: () => router.push(`/ordertracking?orderId=${orderId}`),
+          },
+        ]);
+        setIsPlacingOrder(false);
+        return;
+      }
+
+      // For online payments (UPI, Cards, Netbanking), use Razorpay
+      // Step 1: Create Razorpay order on backend
+      const razorpayOrderResponse = await createRazorpayOrder({
+        amount: totalAmount,
+        userId: user.id,
         cartItems,
         shippingAddress,
         paymentMethod,
-        subtotal,
-        deliveryFee,
-        tax
-      );
+      });
 
-      // Clear cart after successful order
-      await clearCart();
-
-      Alert.alert('Success', 'Order placed successfully!', [
-        {
-          text: 'Track Order',
-          onPress: () => router.push(`/ordertracking?orderId=${orderId}`),
+      // Step 2: Navigate to WebView payment gateway
+      router.push({
+        pathname: '/payment-gateway',
+        params: {
+          orderId: razorpayOrderResponse.razorpayOrderId,
+          amount: totalAmount,
+          keyId: razorpayOrderResponse.keyId,
+          email: user.email,
+          phone: selectedAddressData.phone,
+          itemCount: cartItems.length,
+          subtotal: subtotal,
+          deliveryFee: deliveryFee,
+          tax: tax,
+          totalAmount: totalAmount,
+          userId: user.id,
+          paymentMethod: selectedPayment,
         },
-      ]);
+      });
+
     } catch (error: any) {
       console.error('Error placing order:', error);
-      Alert.alert('Error', error.message || 'Failed to place order. Please try again.');
+      
+      const errorMessage = error.message || 'Failed to process payment. Please try again.';
+      
+      // Check if it's a Cloud Functions deployment issue
+      if (errorMessage.includes('Cloud Functions not deployed') || 
+          errorMessage.includes('404') ||
+          errorMessage.includes('Cannot reach')) {
+        Alert.alert(
+          'Setup Required',
+          'Cloud Functions need to be deployed first.\n\nRun in terminal:\nfirebase deploy --only functions\n\nThen try again.',
+          [
+            { text: 'OK' },
+            { text: 'Try Again', onPress: () => handlePlaceOrder() }
+          ]
+        );
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+      
+      // Log payment failure if Razorpay order was created
+      if (error.razorpayOrderId) {
+        await logPaymentFailure(
+          user.id,
+          error.razorpayOrderId,
+          error.code || 'UNKNOWN_ERROR',
+          error.message
+        );
+      }
     } finally {
       setIsPlacingOrder(false);
     }
@@ -531,7 +592,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
+    color: '#1a1a2e',
   },
   progressContainer: {
     paddingHorizontal: 16,
@@ -556,7 +618,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   progressCircleActive: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#0C63E4',
   },
   progressText: {
     fontSize: 14,
@@ -577,7 +639,7 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   progressLineActive: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#0C63E4',
   },
   stepContent: {
     paddingHorizontal: 16,
@@ -594,36 +656,47 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 12,
+    color: '#1a1a2e',
   },
   addNewButton: {
     fontSize: 12,
-    color: '#2196F3',
-    fontWeight: '700',
+    color: '#0C63E4',
+    fontWeight: '800',
   },
   addressCard: {
     flexDirection: 'row',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    padding: 12,
+    borderColor: '#f0f0f0',
+    borderRadius: 14,
+    padding: 14,
     marginBottom: 12,
     backgroundColor: 'white',
     alignItems: 'flex-start',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.03,
+    shadowRadius: 1,
   },
   addressCardSelected: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
+    borderColor: '#0C63E4',
+    backgroundColor: '#f0f8ff',
   },
   addressIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#2196F3',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#0C63E4',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    elevation: 2,
+    shadowColor: '#0C63E4',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
   },
   addressIcon: {
     fontSize: 20,
@@ -643,15 +716,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   typeBadge: {
-    backgroundColor: '#2196F3',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: '#0C63E4',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   typeBadgeText: {
     fontSize: 9,
     color: 'white',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   workLabel: {
     fontSize: 10,
@@ -674,14 +747,14 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,
   },
   selectIconActive: {
-    borderColor: '#2196F3',
-    backgroundColor: '#2196F3',
+    borderColor: '#0C63E4',
+    backgroundColor: '#0C63E4',
   },
   selectIconText: {
     fontSize: 12,
@@ -697,14 +770,19 @@ const styles = StyleSheet.create({
   paymentCard: {
     width: '48%',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: '#f0f0f0',
     borderRadius: 12,
     padding: 12,
     backgroundColor: 'white',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.03,
+    shadowRadius: 1,
   },
   paymentCardSelected: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
+    borderColor: '#0C63E4',
+    backgroundColor: '#f0f8ff',
   },
   paymentContent: {
     flexDirection: 'row',
@@ -729,16 +807,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   paymentBadge: {
-    backgroundColor: '#E3F2FD',
-    borderRadius: 4,
-    paddingHorizontal: 8,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 6,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#e0e8ff',
   },
   paymentBadgeText: {
-    fontSize: 9,
-    color: '#2196F3',
-    fontWeight: '700',
+    fontSize: 10,
+    color: '#0C63E4',
+    fontWeight: '800',
   },
   reviewBox: {
     backgroundColor: 'white',

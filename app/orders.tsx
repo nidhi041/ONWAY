@@ -42,7 +42,7 @@ const OrderCard = ({ order, onPress }: { order: Order; onPress: () => void }) =>
         return '#FF9800';
       case 'confirmed':
       case 'processing':
-        return '#2196F3';
+        return '#0C63E4';
       case 'cancelled':
         return '#F44336';
       default:
@@ -136,7 +136,7 @@ export default function OrdersScreen() {
       {/* Content */}
       {isLoading ? (
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color="#0C63E4" />
           <Text style={[styles.loadingText, { color: Colors.light.text }]}>
             Loading orders...
           </Text>
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   shopButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#0C63E4',
     borderRadius: 12,
     paddingHorizontal: 32,
     paddingVertical: 12,
@@ -287,8 +287,8 @@ const styles = StyleSheet.create({
   },
   priceAmount: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#2196F3',
+    fontWeight: '800',
+    color: '#22C55E',
   },
   itemsPreview: {
     marginBottom: 12,
@@ -317,8 +317,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   viewDetails: {
-    fontSize: 11,
-    color: '#2196F3',
-    fontWeight: '700',
+    fontSize: 12,
+    color: '#0C63E4',
+    fontWeight: '800',
   },
 });
