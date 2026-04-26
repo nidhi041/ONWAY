@@ -5,6 +5,8 @@ import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
     signOut,
+    GoogleAuthProvider,
+    signInWithCredential,
 } from 'firebase/auth';
 import {
     doc,
@@ -29,6 +31,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string, phone: string) => Promise<void>;
   logout: () => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
+  updateUserProfile: (name: string, avatarUrl?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -38,6 +42,8 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   signup: async () => {},
   logout: async () => {},
+  loginWithGoogle: async () => {},
+  updateUserProfile: async () => {},
 });
 
 export const useAuth = () => {
@@ -209,6 +215,94 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithGoogle = async (idToken: string) => {
+    try {
+      const credential = GoogleAuthProvider.credential(idToken);
+      const userCredential = await signInWithCredential(auth, credential);
+
+      // Check if user exists in Firestore
+      try {
+        const userDocRef = doc(db, 'users', userCredential.user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          setUser({
+            id: userCredential.user.uid,
+            name: userData.name || userCredential.user.displayName || '',
+            email: userCredential.user.email || '',
+            phone: userData.phone || '',
+            avatar: userData.avatar || userCredential.user.photoURL || '👤',
+          });
+        } else {
+          // Create new user in Firestore
+          const name = userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'User';
+          await setDoc(userDocRef, {
+            name,
+            email: userCredential.user.email || '',
+            phone: '',
+            avatar: userCredential.user.photoURL || '👤',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+          
+          setUser({
+            id: userCredential.user.uid,
+            name,
+            email: userCredential.user.email || '',
+            phone: '',
+            avatar: userCredential.user.photoURL || '👤',
+          });
+        }
+      } catch (firestoreError) {
+        console.warn('Could not fetch/save Firestore data, but authentication successful:', firestoreError);
+        setUser({
+          id: userCredential.user.uid,
+          name: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'User',
+          email: userCredential.user.email || '',
+          phone: '',
+          avatar: userCredential.user.photoURL || '👤',
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Google Login failed: ${error.message}`);
+      }
+      throw error;
+    }
+  };
+
+  const updateUserProfile = async (name: string, avatarUrl?: string) => {
+    if (!user?.id) throw new Error('User must be logged in to update profile');
+
+    try {
+      const userDocRef = doc(db, 'users', user.id);
+      const updateData: any = {
+        name,
+        updatedAt: serverTimestamp(),
+      };
+      
+      if (avatarUrl !== undefined) {
+        updateData.avatar = avatarUrl;
+      }
+
+      await setDoc(userDocRef, updateData, { merge: true });
+
+      // Update local state
+      setUser((prevUser) => {
+        if (!prevUser) return null;
+        return {
+          ...prevUser,
+          name,
+          ...(avatarUrl !== undefined && { avatar: avatarUrl }),
+        };
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -218,6 +312,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         signup,
         logout,
+        loginWithGoogle,
+        updateUserProfile,
       }}
     >
       {children}
