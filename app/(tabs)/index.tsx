@@ -1,9 +1,11 @@
 import { Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useFirestore';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
     ActivityIndicator,
     Animated,
@@ -77,11 +79,7 @@ const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPr
         style={styles.productImage}
       />
       
-      {/* Delivery Badge */}
-      <View style={styles.deliveryTimeBadge}>
-        <Text style={styles.deliveryTimeIcon}>🚚</Text>
-        <Text style={styles.deliveryTimeText}>{product.deliveryTime} m</Text>
-      </View>
+
 
       {/* Discount Badge */}
       {discount > 0 && (
@@ -147,6 +145,7 @@ const PromoBanner = () => (
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { addToCart, cartItems } = useCart();
   const { products: allProducts, loading: productsLoading } = useProducts();
   const [categories] = useState<Category[]>(MOCK_CATEGORIES);
@@ -190,7 +189,11 @@ export default function HomeScreen() {
           <Text style={styles.logo}>⚡</Text>
           <View style={{ flex: 1 }} />
           <TouchableOpacity onPress={() => router.push('/profile')}>
-            <Text style={styles.profileIcon}>👤</Text>
+            {user?.avatar && user.avatar.startsWith('http') ? (
+              <RNImage source={{ uri: user.avatar }} style={styles.profileImage} />
+            ) : (
+              <Ionicons name="person-circle" size={42} color="#0C63E4" style={styles.profileIconVector} />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -201,7 +204,7 @@ export default function HomeScreen() {
           activeOpacity={0.8}
         >
           <View style={styles.searchInputContainer}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <Ionicons name="search" size={20} color="#777" style={styles.searchIcon} />
             <TextInput
               style={[styles.searchInput, { color: Colors.light.text }]}
               placeholder="Search medicines, grocery..."
@@ -209,26 +212,21 @@ export default function HomeScreen() {
               editable={false}
               pointerEvents="none"
             />
-            <Text style={styles.micIcon}>🎤</Text>
+            <Ionicons name="mic" size={20} color="#4285F4" style={styles.micIcon} />
           </View>
         </TouchableOpacity>
 
-        {/* Delivery & Offers Tabs */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'delivery' && styles.activeTab]}
-            onPress={() => setActiveTab('delivery')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.tabText, activeTab === 'delivery' && { color: 'white' }]}>💧 Fast Delivery in 10 mins</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'offers' && styles.activeTab]}
-            onPress={() => setActiveTab('offers')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.tabText, activeTab === 'offers' && { color: 'white' }]}>Offers</Text>
-          </TouchableOpacity>
+        {/* Delivery Banner */}
+        <View style={styles.deliveryBannerContainer}>
+          <View style={styles.deliveryBanner}>
+            <View style={styles.deliveryIconContainer}>
+              <Text style={styles.deliveryIcon}>⚡</Text>
+            </View>
+            <View style={styles.deliveryTextContainer}>
+              <Text style={styles.deliveryBannerTitle}>Fast Delivery</Text>
+              <Text style={styles.deliveryBannerSubtitle}>to your doorstep in 10 mins</Text>
+            </View>
+          </View>
         </View>
 
         {/* Categories Section */}
@@ -379,9 +377,16 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
   },
-  profileIcon: {
-    fontSize: 32,
+  profileIconVector: {
     marginLeft: 'auto',
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginLeft: 'auto',
+    borderWidth: 2,
+    borderColor: '#0C63E4',
   },
   
   // ===== SEARCH BAR =====
@@ -393,63 +398,80 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 14,
-    paddingHorizontal: 14,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   searchIcon: {
-    fontSize: 16,
     marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     padding: 0,
     fontWeight: '500',
   },
   micIcon: {
-    fontSize: 16,
     marginLeft: 10,
   },
 
-  // ===== TABS =====
-  tabsContainer: {
-    flexDirection: 'row',
-    paddingVertical: 14,
+  // ===== DELIVERY BANNER =====
+  deliveryBannerContainer: {
+    paddingVertical: 8,
     paddingHorizontal: 0,
-    gap: 10,
+    marginBottom: 8,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    backgroundColor: '#f5f5f5',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
+  deliveryBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#F5F9FF',
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: '#E8F1FF',
   },
-  activeTab: {
-    backgroundColor: '#0C63E4',
-    borderColor: '#0C63E4',
-    elevation: 3,
-    shadowOpacity: 0.08,
+  deliveryIconContainer: {
+    backgroundColor: '#FFFFFF',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+    elevation: 2,
+    shadowColor: '#0C63E4',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
   },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: Colors.light.text,
+  deliveryIcon: {
+    fontSize: 20,
+  },
+  deliveryTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  deliveryBannerTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1a1a2e',
+    letterSpacing: 0.3,
+    marginBottom: 2,
+  },
+  deliveryBannerSubtitle: {
+    fontSize: 12,
+    color: '#0C63E4',
+    fontWeight: '700',
+    opacity: 0.9,
   },
 
   // ===== SECTIONS =====

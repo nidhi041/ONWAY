@@ -1,6 +1,7 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Image,
   ScrollView,
@@ -175,13 +176,16 @@ export default function ProfileScreen() {
         {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.profileAvatarContainer}>
-            <Image
-              source={{ uri: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1775672043/arun_eagwnh.jpg' }}
-              style={styles.profileAvatar}
-            />
-            <View style={styles.memberBadge}>
-              <Text style={styles.memberBadgeText}>⭐</Text>
-            </View>
+            {user?.avatar && user.avatar.startsWith('http') ? (
+              <Image
+                source={{ uri: user.avatar }}
+                style={styles.profileAvatar}
+              />
+            ) : (
+              <View style={[styles.profileAvatar, styles.placeholderAvatar]}>
+                <Ionicons name="person" size={50} color="#0C63E4" />
+              </View>
+            )}
           </View>
 
           <Text style={[styles.profileName, { color: Colors.light.text }]}>
@@ -189,14 +193,12 @@ export default function ProfileScreen() {
           </Text>
           <Text style={styles.profileEmail}>{user?.email}</Text>
 
-          <View style={styles.statsContainer}>
-            <View style={styles.statBadge}>
-              <Text style={styles.statBadgeText}>Member</Text>
-            </View>
-            <View style={styles.statBadge}>
-              <Text style={styles.statBadgeText}>Active User</Text>
-            </View>
-          </View>
+          <TouchableOpacity 
+            style={styles.editProfileButton}
+            onPress={() => router.push('/edit-profile')}
+          >
+            <Text style={styles.editProfileButtonText}>Edit Profile</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Activity Section */}
@@ -371,6 +373,13 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
   },
+  placeholderAvatar: {
+    backgroundColor: '#F5F9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8F1FF',
+  },
   memberBadge: {
     position: 'absolute',
     bottom: 0,
@@ -397,22 +406,22 @@ const styles = StyleSheet.create({
     color: '#999',
     marginBottom: 12,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: 10,
+  editProfileButton: {
+    backgroundColor: '#0C63E4',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginTop: 4,
+    elevation: 2,
+    shadowColor: '#0C63E4',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
-  statBadge: {
-    backgroundColor: '#E3F2FD',
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#2196F3',
-  },
-  statBadgeText: {
-    fontSize: 11,
-    color: '#2196F3',
-    fontWeight: '700',
+  editProfileButtonText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 14,
   },
   section: {
     marginBottom: 4,

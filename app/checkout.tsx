@@ -2,7 +2,7 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { createOrder, PaymentMethod, ShippingAddress } from '@/services/ordersService';
-import { createRazorpayOrder, verifyPaymentSignature, logPaymentFailure } from '@/services/razorpayService';
+import { createRazorpayOrder, logPaymentFailure } from '@/services/razorpayService';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
