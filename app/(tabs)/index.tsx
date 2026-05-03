@@ -1,3 +1,4 @@
+import AddToCartButton from '@/components/AddToCartButton';
 import { Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -41,6 +42,14 @@ const MOCK_CATEGORIES: Category[] = [
 
 
 // Category Item Component
+const CategoryItem = ({ category, onPress }: { category: Category; onPress?: () => void }) => (
+  <TouchableOpacity style={styles.categoryItem} onPress={onPress}>
+    <View style={styles.categoryIconContainer}>
+      <RNImage source={category.icon} style={styles.categoryIconImage} resizeMode="cover" />
+    </View>
+    <Text style={styles.categoryName}>{category.name}</Text>
+  </TouchableOpacity>
+);
 const CategoryItem = ({ category, onPress }: { category: Category; onPress?: () => void }) => {
   const [isPressed, setIsPressed] = useState(false);
   
@@ -61,12 +70,30 @@ const CategoryItem = ({ category, onPress }: { category: Category; onPress?: () 
 };
 
 // Product Card Component
-const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPress?: () => void; onAddToCart?: () => void }) => {
+const ProductCard = ({ product, onPress }: { product: Product; onPress?: () => void }) => {
   const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
   const discount = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
   const [isPressed, setIsPressed] = useState(false);
   
   return (
+    <TouchableOpacity style={styles.productCard} onPress={onPress}>
+      <RNImage source={imageSource} style={styles.productImage} />
+      <View style={styles.deliveryTimeBadge}>
+        <Text style={styles.deliveryTimeText}>{product.deliveryTime} mins</Text>
+      </View>
+      <View style={styles.productInfo}>
+        <Text style={styles.productCategory}>{product.category}</Text>
+        <Text style={styles.productName}>{product.name}</Text>
+        <View style={styles.ratingRow}>
+          <Text style={styles.ratingText}>⭐ {product.rating}</Text>
+        </View>
+        <View style={styles.priceRow}>
+          <Text style={styles.price}>₹{product.price}</Text>
+          {product.originalPrice && (
+            <Text style={styles.originalPrice}>₹{product.originalPrice}</Text>
+          )}
+        </View>
+        <AddToCartButton product={product} size="small" />
     <TouchableOpacity 
       style={[styles.productCard, isPressed && styles.productCardPressed]} 
       onPress={onPress}
@@ -145,6 +172,7 @@ const PromoBanner = () => (
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { cartItems } = useCart();
   const { user } = useAuth();
   const { addToCart, cartItems } = useCart();
   const { products: allProducts, loading: productsLoading } = useProducts();
@@ -160,7 +188,7 @@ export default function HomeScreen() {
   useEffect(() => {
     Animated.spring(slideAnim, {
       toValue: cartHasItems ? 0 : 100,
-      useNativeDriver: true,
+      useNativeDriver: false,
       tension: 80,
       friction: 10,
     }).start();
@@ -206,11 +234,13 @@ export default function HomeScreen() {
           <View style={styles.searchInputContainer}>
             <Ionicons name="search" size={20} color="#777" style={styles.searchIcon} />
             <TextInput
+              style={[styles.searchInput, { color: Colors.light.text, pointerEvents: 'none' }]}
+              placeholder="Search medicines, grocery, cosmetics..."
+              placeholderTextColor="#ccc"
               style={[styles.searchInput, { color: Colors.light.text }]}
               placeholder="Search medicines, grocery..."
               placeholderTextColor="#999"
               editable={false}
-              pointerEvents="none"
             />
             <Ionicons name="mic" size={20} color="#4285F4" style={styles.micIcon} />
           </View>
@@ -268,7 +298,6 @@ export default function HomeScreen() {
               <ProductCard
                 product={item}
                 onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
-                onAddToCart={() => addToCart(item)}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -293,7 +322,6 @@ export default function HomeScreen() {
               <ProductCard
                 product={item}
                 onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
-                onAddToCart={() => addToCart(item)}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -528,7 +556,6 @@ const styles = StyleSheet.create({
   categoryIconImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   categoryName: {
     fontSize: 12,
@@ -551,7 +578,6 @@ const styles = StyleSheet.create({
   },
   promoBannerImage: {
     borderRadius: 16,
-    resizeMode: 'cover',
   },
   bannerGradientOverlay: {
     position: 'absolute',
@@ -760,6 +786,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a2e',
     borderRadius: 14,
     elevation: 8,
+    boxShadow: '0px -2px 8px rgba(0,0,0,0.2)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.15,

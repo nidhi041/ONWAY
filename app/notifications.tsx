@@ -1,16 +1,15 @@
 import { Colors } from '@/constants/theme';
-import { useState } from 'react';
+import { useNotifications } from '@/hooks/useFirestore';
 import {
+    ActivityIndicator,
     Alert,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
-    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNotifications } from '@/hooks/useFirestore';
 
 const NotificationCard = ({
   notification,
@@ -252,6 +251,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     marginBottom: 4,
+    boxShadow: '0px 2px 4px rgba(0,0,0,0.05)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,

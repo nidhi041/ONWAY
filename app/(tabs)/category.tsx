@@ -1,6 +1,6 @@
+import AddToCartButton from '@/components/AddToCartButton';
 import { Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
-import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useFirestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -21,12 +21,12 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 type SortOption = 'popularity' | 'price-low' | 'price-high' | 'rating';
 type FilterOption = 'all' | 'price-low-high' | 'rating-40' | 'fast-deliver';
 
-const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPress?: () => void; onAddToCart?: () => void }) => {
+const ProductCard = ({ product, onPress }: { product: Product; onPress?: () => void }) => {
   const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
   return (
     <TouchableOpacity style={styles.productCard} onPress={onPress}>
       <View style={styles.imageContainer}>
-        <RNImage source={imageSource} style={styles.productImage} />
+        <RNImage source={imageSource} style={styles.productImage} resizeMode="cover" />
         <View style={styles.ratingBadge}>
           <Text style={styles.ratingBadgeText}>⭐ {product.rating}</Text>
         </View>
@@ -41,9 +41,7 @@ const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPr
           )}
         </View>
         <Text style={styles.taxText}>Incl. Taxes</Text>
-        <TouchableOpacity style={styles.addButton} onPress={onAddToCart}>
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
+        <AddToCartButton product={product} />
       </View>
     </TouchableOpacity>
   );
@@ -51,7 +49,6 @@ const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPr
 
 export default function CategoryScreen() {
   const router = useRouter();
-  const { addToCart } = useCart();
   const params = useLocalSearchParams();
   const categoryName = (params.name as string) || 'grocery';
   const { products: allProducts, loading } = useProducts();
@@ -155,7 +152,6 @@ export default function CategoryScreen() {
                 <ProductCard
                   product={item}
                   onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
-                  onAddToCart={() => addToCart(item)}
                 />
               )}
               keyExtractor={(item) => item.id}
@@ -311,7 +307,6 @@ const styles = StyleSheet.create({
   productImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   ratingBadge: {
     position: 'absolute',

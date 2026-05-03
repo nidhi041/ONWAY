@@ -1,6 +1,5 @@
 import { PRODUCTS, Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
-import { useCart } from '@/context/CartContext';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -51,7 +50,6 @@ const SEARCH_CATEGORIES = [
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { addToCart } = useCart();
   const [searchText, setSearchText] = useState('');
   const [recentSearches, setRecentSearches] = useState(RECENT_SEARCHES);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -90,8 +88,9 @@ export default function SearchScreen() {
     <TouchableOpacity
       style={styles.searchResultCard}
       onPress={() => router.push(`/product?id=${product.id}&name=${product.name}`)}
+      activeOpacity={0.9}
     >
-      <RNImage source={product.image} style={styles.resultImage} />
+      <RNImage source={product.image} style={styles.resultImage} resizeMode="cover" />
       <View style={styles.resultInfo}>
         <Text style={styles.resultBrand}>{product.brand}</Text>
         <Text style={[styles.resultName, { color: Colors.light.text }]} numberOfLines={2}>
@@ -101,10 +100,10 @@ export default function SearchScreen() {
           <Text style={styles.resultPrice}>₹{product.price}</Text>
           <Text style={styles.resultRating}>⭐ {product.rating}</Text>
         </View>
+        <View style={styles.resultAddButtonContainer}>
+          <AddToCartButton product={product} size="small" />
+        </View>
       </View>
-      <TouchableOpacity style={styles.resultAddButton} onPress={() => addToCart(product)}>
-        <Text style={styles.resultAddButtonText}>+</Text>
-      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -408,6 +407,7 @@ const styles = StyleSheet.create({
     margin: 8,
     overflow: 'hidden',
     elevation: 2,
+    boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 3,
@@ -419,7 +419,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 140,
     backgroundColor: '#F5F5F5',
-    resizeMode: 'cover',
   },
   resultInfo: {
     padding: 12,
@@ -454,6 +453,8 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '600',
   },
+  resultAddButtonContainer: {
+    marginTop: 8,
   resultAddButton: {
     position: 'absolute',
     top: 10,
