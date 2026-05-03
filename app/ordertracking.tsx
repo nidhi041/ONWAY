@@ -114,7 +114,7 @@ export default function OrderTrackingScreen() {
     return (
       <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color="#0C63E4" />
         </View>
       </View>
     );
@@ -158,7 +158,7 @@ export default function OrderTrackingScreen() {
       case 'confirmed':
       case 'processing':
       case 'shipped':
-        return '#2196F3';
+        return '#0C63E4';
       case 'cancelled':
         return '#F44336';
       default:

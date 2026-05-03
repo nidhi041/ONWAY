@@ -1,7 +1,11 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 import {
     ActivityIndicator,
     Alert,
@@ -16,7 +20,7 @@ import {
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { signup, loginWithGoogle } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -27,6 +31,34 @@ export default function SignupScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Google Auth Setup
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: '40420149902-rojg2b43llmr0k9d6g7s5qcstrkrquld.apps.googleusercontent.com',
+    clientId: '40420149902-rojg2b43llmr0k9d6g7s5qcstrkrquld.apps.googleusercontent.com',
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      if (id_token) {
+        handleGoogleLogin(id_token);
+      }
+    }
+  }, [response]);
+
+  const handleGoogleLogin = async (idToken: string) => {
+    setLoading(true);
+    try {
+      await loginWithGoogle(idToken);
+      router.replace('/(tabs)/profile');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Google Signup failed.';
+      Alert.alert('Signup Failed', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -300,12 +332,15 @@ export default function SignupScreen() {
             <View style={styles.divider} />
           </View>
 
-          {/* Google Signup Info */}
-          <View style={styles.googleInfoContainer}>
-            <Text style={styles.googleInfoText}>
-              🔍 Google Sign-In requires a custom development build
-            </Text>
-          </View>
+          {/* Google Signup Button */}
+          <TouchableOpacity
+            style={[styles.googleButton, loading && styles.googleButtonDisabled]}
+            onPress={() => promptAsync()}
+            disabled={!request || loading}
+          >
+            <Text style={styles.googleIcon}>G</Text>
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Login Link */}
