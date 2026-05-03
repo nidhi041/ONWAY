@@ -1,9 +1,10 @@
+import AddToCartButton from '@/components/AddToCartButton';
 import { Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useFirestore';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Animated,
@@ -42,41 +43,36 @@ const MOCK_CATEGORIES: Category[] = [
 const CategoryItem = ({ category, onPress }: { category: Category; onPress?: () => void }) => (
   <TouchableOpacity style={styles.categoryItem} onPress={onPress}>
     <View style={styles.categoryIconContainer}>
-      <RNImage source={category.icon} style={styles.categoryIconImage} />
+      <RNImage source={category.icon} style={styles.categoryIconImage} resizeMode="cover" />
     </View>
     <Text style={styles.categoryName}>{category.name}</Text>
   </TouchableOpacity>
 );
 
 // Product Card Component
-const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPress?: () => void; onAddToCart?: () => void }) => {
+const ProductCard = ({ product, onPress }: { product: Product; onPress?: () => void }) => {
   const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
   return (
     <TouchableOpacity style={styles.productCard} onPress={onPress}>
-      <RNImage
-        source={imageSource}
-        style={styles.productImage}
-      />
-    <View style={styles.deliveryTimeBadge}>
-      <Text style={styles.deliveryTimeText}>{product.deliveryTime} mins</Text>
-    </View>
-    <View style={styles.productInfo}>
-      <Text style={styles.productCategory}>{product.category}</Text>
-      <Text style={styles.productName}>{product.name}</Text>
-      <View style={styles.ratingRow}>
-        <Text style={styles.ratingText}>⭐ {product.rating}</Text>
+      <RNImage source={imageSource} style={styles.productImage} />
+      <View style={styles.deliveryTimeBadge}>
+        <Text style={styles.deliveryTimeText}>{product.deliveryTime} mins</Text>
       </View>
-      <View style={styles.priceRow}>
-        <Text style={styles.price}>₹{product.price}</Text>
-        {product.originalPrice && (
-          <Text style={styles.originalPrice}>₹{product.originalPrice}</Text>
-        )}
+      <View style={styles.productInfo}>
+        <Text style={styles.productCategory}>{product.category}</Text>
+        <Text style={styles.productName}>{product.name}</Text>
+        <View style={styles.ratingRow}>
+          <Text style={styles.ratingText}>⭐ {product.rating}</Text>
+        </View>
+        <View style={styles.priceRow}>
+          <Text style={styles.price}>₹{product.price}</Text>
+          {product.originalPrice && (
+            <Text style={styles.originalPrice}>₹{product.originalPrice}</Text>
+          )}
+        </View>
+        <AddToCartButton product={product} size="small" />
       </View>
-      <TouchableOpacity style={styles.addButton} onPress={onAddToCart}>
-        <Text style={styles.addButtonText}>+</Text>
-      </TouchableOpacity>
-    </View>
-  </TouchableOpacity>
+    </TouchableOpacity>
   );
 };
 
@@ -100,7 +96,7 @@ const PromoBanner = () => (
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { addToCart, cartItems } = useCart();
+  const { cartItems } = useCart();
   const { products: allProducts, loading: productsLoading } = useProducts();
   const [categories] = useState<Category[]>(MOCK_CATEGORIES);
   const [activeTab, setActiveTab] = useState<'delivery' | 'offers'>('delivery');
@@ -114,7 +110,7 @@ export default function HomeScreen() {
   useEffect(() => {
     Animated.spring(slideAnim, {
       toValue: cartHasItems ? 0 : 100,
-      useNativeDriver: true,
+      useNativeDriver: false,
       tension: 80,
       friction: 10,
     }).start();
@@ -156,11 +152,10 @@ export default function HomeScreen() {
           <View style={styles.searchInputContainer}>
             <Text style={styles.searchIcon}>🔍</Text>
             <TextInput
-              style={[styles.searchInput, { color: Colors.light.text }]}
+              style={[styles.searchInput, { color: Colors.light.text, pointerEvents: 'none' }]}
               placeholder="Search medicines, grocery, cosmetics..."
               placeholderTextColor="#ccc"
               editable={false}
-              pointerEvents="none"
             />
           </View>
         </TouchableOpacity>
@@ -220,7 +215,6 @@ export default function HomeScreen() {
               <ProductCard
                 product={item}
                 onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
-                onAddToCart={() => addToCart(item)}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -245,7 +239,6 @@ export default function HomeScreen() {
               <ProductCard
                 product={item}
                 onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
-                onAddToCart={() => addToCart(item)}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -414,7 +407,6 @@ const styles = StyleSheet.create({
   categoryIconImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   categoryName: {
     fontSize: 11,
@@ -430,7 +422,6 @@ const styles = StyleSheet.create({
   },
   promoBannerImage: {
     borderRadius: 16,
-    resizeMode: 'cover',
   },
   promoContent: {
     padding: 20,
@@ -565,6 +556,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a2e',
     borderRadius: 16,
     elevation: 8,
+    boxShadow: '0px -2px 8px rgba(0,0,0,0.2)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.2,

@@ -1,18 +1,18 @@
-import {
-  ScrollView,
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Image as RNImage,
-  Dimensions,
-  ImageSourcePropType,
-  Text,
-  TextInput,
-} from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+    Dimensions,
+    ImageSourcePropType,
+    Image as RNImage,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 interface CartItem {
   id: string;
@@ -36,7 +36,7 @@ interface CartItemCardProps {
 const CartItemCard = ({ item, onQuantityChange, onRemove }: CartItemCardProps) => (
   <View style={styles.cartItemCard}>
     <View style={styles.itemImageContainer}>
-      <RNImage source={item.image} style={styles.itemImage} />
+      <RNImage source={item.image} style={styles.itemImage} resizeMode="cover" />
     </View>
     <View style={styles.itemDetails}>
       <View style={styles.itemHeader}>
@@ -383,7 +383,6 @@ const styles = StyleSheet.create({
   itemImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   itemDetails: {
     flex: 1,
