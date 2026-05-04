@@ -1,3 +1,4 @@
+import AddToCartButton from '@/components/AddToCartButton';
 import { Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
@@ -22,7 +23,7 @@ const RelatedProductCard = ({ product }: { product: Product }) => {
   const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
   return (
     <TouchableOpacity style={styles.relatedCard}>
-      <RNImage source={imageSource} style={styles.relatedImage} />
+      <RNImage source={imageSource} style={styles.relatedImage} resizeMode="cover" />
       <Text style={styles.relatedName}>{product.name}</Text>
       <View style={styles.relatedPriceRow}>
         <Text style={styles.relatedPrice}>₹{product.price}</Text>
@@ -54,7 +55,7 @@ export default function ProductDetailScreen() {
   useEffect(() => {
     Animated.spring(slideAnim, {
       toValue: cartHasItems ? 0 : 100,
-      useNativeDriver: true,
+      useNativeDriver: false,
       tension: 80,
       friction: 10,
     }).start();
@@ -139,7 +140,8 @@ export default function ProductDetailScreen() {
         <View style={styles.imageContainer}>
           <RNImage 
             source={product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif')} 
-            style={styles.productImage} 
+            style={styles.productImage}
+            resizeMode="contain" 
           />
           <View style={styles.imageDot} />
         </View>
@@ -247,9 +249,9 @@ export default function ProductDetailScreen() {
         <TouchableOpacity style={styles.buyNowButton} onPress={handleBuyNow}>
           <Text style={styles.buyNowText}>Buy Now</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
-          <Text style={styles.addToCartText}>Add to Cart</Text>
-        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <AddToCartButton product={product} />
+        </View>
       </View>
     </View>
   );
@@ -300,7 +302,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 16,
   },
-  productImage: { width: '80%', height: '80%', resizeMode: 'contain' },
+  productImage: { width: '80%', height: '80%' },
   imageDot: {
     position: 'absolute',
     bottom: 16,
@@ -406,6 +408,7 @@ const styles = StyleSheet.create({
   relatedImage: {
     width: '100%',
     height: 100,
+    borderRadius: 8,
     resizeMode: 'cover',
     borderRadius: 10,
     marginBottom: 8,
@@ -439,6 +442,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     elevation: 8,
+    boxShadow: '0px -2px 8px rgba(0,0,0,0.2)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.2,

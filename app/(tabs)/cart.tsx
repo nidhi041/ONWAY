@@ -36,7 +36,7 @@ interface CartItemCardProps {
 const CartItemCard = ({ item, onQuantityChange, onRemove }: CartItemCardProps) => (
   <View style={styles.cartItemCard}>
     <View style={styles.itemImageContainer}>
-      <RNImage source={item.image} style={styles.itemImage} />
+      <RNImage source={item.image} style={styles.itemImage} resizeMode="cover" />
     </View>
     <View style={styles.itemDetails}>
       <View style={styles.itemHeader}>
@@ -383,7 +383,6 @@ const styles = StyleSheet.create({
   itemImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   itemDetails: {
     flex: 1,
