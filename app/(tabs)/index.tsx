@@ -22,43 +22,7 @@ import {
     View
 } from 'react-native';
 
-interface Category {
-  id: string;
-  name: string;
-  icon: ImageSourcePropType;
-}
-
 const SCREEN_WIDTH = Dimensions.get('window').width;
-
-const MOCK_CATEGORIES: Category[] = [
-  { id: '1', name: 'Grocery', icon: require('@/assets/images/grocery.png') },
-  { id: '2', name: 'Medicines', icon: require('@/assets/images/medicine.png') },
-  { id: '3', name: 'Beauty', icon: require('@/assets/images/beauty.png') },
-  { id: '4', name: 'Electronics', icon: require('@/assets/images/electronic.png') },
-  { id: '5', name: 'Baby', icon: require('@/assets/images/babyCare.png') },
-];
-
-
-
-// Category Item Component
-const CategoryItem = ({ category, onPress }: { category: Category; onPress?: () => void }) => {
-  const [isPressed, setIsPressed] = useState(false);
-  
-  return (
-    <TouchableOpacity 
-      style={[styles.categoryItem, isPressed && styles.categoryItemPressed]} 
-      onPress={onPress}
-      onPressIn={() => setIsPressed(true)}
-      onPressOut={() => setIsPressed(false)}
-      activeOpacity={0.9}
-    >
-      <View style={styles.categoryIconContainer}>
-        <RNImage source={category.icon} style={styles.categoryIconImage} />
-      </View>
-      <Text style={styles.categoryName}>{category.name}</Text>
-    </TouchableOpacity>
-  );
-};
 
 // Product Card Component
 const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPress?: () => void; onAddToCart?: () => void }) => {
@@ -89,14 +53,13 @@ const ProductCard = ({ product, onPress, onAddToCart }: { product: Product; onPr
       )}
 
       <View style={styles.productInfo}>
-        <Text style={styles.productCategory}>{product.category.toUpperCase()}</Text>
+
         <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
         
         {/* Rating */}
         <View style={styles.ratingRow}>
           <Text style={styles.ratingIcon}>⭐</Text>
           <Text style={styles.ratingText}>{product.rating}</Text>
-          <Text style={styles.reviewsText}>({product.reviews})</Text>
         </View>
         
         {/* Price Section */}
@@ -148,7 +111,7 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { addToCart, cartItems } = useCart();
   const { products: allProducts, loading: productsLoading } = useProducts();
-  const [categories] = useState<Category[]>(MOCK_CATEGORIES);
+
   const [activeTab, setActiveTab] = useState<'delivery' | 'offers'>('delivery');
   const slideAnim = useRef(new Animated.Value(100)).current;
 
@@ -229,23 +192,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Categories Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>Categories</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.categoriesScroll}
-          >
-            {categories.map((category) => (
-              <CategoryItem
-                key={category.id}
-                category={category}
-                onPress={() => router.push(`/(tabs)/category?name=${category.name}`)}
-              />
-            ))}
-          </ScrollView>
-        </View>
 
         {/* Promotional Banner */}
         <View style={styles.section}>

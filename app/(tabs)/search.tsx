@@ -66,9 +66,8 @@ export default function SearchScreen() {
       // Filter products based on search text
       const results = PRODUCTS.filter((product) =>
         product.name.toLowerCase().includes(text.toLowerCase()) ||
-        product.brand?.toLowerCase().includes(text.toLowerCase()) ||
-        product.category.toLowerCase().includes(text.toLowerCase()) ||
-        product.description?.toLowerCase().includes(text.toLowerCase())
+          product.name.toLowerCase().includes(text.toLowerCase()) ||
+          (product.brand && product.brand.toLowerCase().includes(text.toLowerCase()))
       );
       
       setSearchResults(results);

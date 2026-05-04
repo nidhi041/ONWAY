@@ -70,7 +70,7 @@ export default function ProductDetailScreen() {
         setProduct(foundProduct);
         // Get related products from same category
         const related = allProducts
-          .filter(p => p.category === foundProduct.category && p.id !== productId)
+          .filter(p => p.id !== productId)
           .slice(0, 3);
         setRelatedProducts(related);
       }
@@ -150,8 +150,7 @@ export default function ProductDetailScreen() {
           <Text style={[styles.productName, { color: Colors.light.text }]}>{product.name}</Text>
 
           <View style={styles.ratingContainer}>
-            <Text style={styles.ratingStars}>⭐</Text>
-            <Text style={styles.reviews}>{product.reviews} Reviews</Text>
+            <Text style={styles.ratingStars}>⭐ {product.rating}</Text>
           </View>
 
           <View style={styles.priceSection}>
@@ -162,17 +161,7 @@ export default function ProductDetailScreen() {
             <Text style={styles.discount}>Save {discountPercent}%</Text>
           </View>
 
-          <View style={styles.deliveryBox}>
-            <Text style={styles.deliveryIcon}>🚚</Text>
-            <View style={styles.deliveryTextContainer}>
-              <Text style={styles.deliveryTitle}>FAST DELIVERY</Text>
-              <Text style={styles.deliveryTime}>
-                Arriving in {product.deliveryTime}-{product.deliveryTime + 10} mins
-              </Text>
-              <Text style={styles.deliverySubtext}>Order now for priority delivery</Text>
-            </View>
-            <Text style={styles.deliveryArrow}>›</Text>
-          </View>
+
 
           {/* Quantity Selector */}
           <View style={styles.quantitySection}>
@@ -208,18 +197,7 @@ export default function ProductDetailScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoIcon}>🛡️</Text>
-              <Text style={[styles.infoText, { color: Colors.light.text }]}>{product.warranty}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoIcon}>↩️</Text>
-              <Text style={[styles.infoText, { color: Colors.light.text }]}>
-                {product.returnDays} Days Return
-              </Text>
-            </View>
-          </View>
+
 
           <View style={styles.relatedSection}>
             <View style={styles.relatedHeader}>
