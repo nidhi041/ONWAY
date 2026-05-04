@@ -23,13 +23,13 @@ import {
     View
 } from 'react-native';
 
-interface Category {
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
+export interface Category {
   id: string;
   name: string;
   icon: ImageSourcePropType;
 }
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const MOCK_CATEGORIES: Category[] = [
   { id: '1', name: 'Grocery', icon: require('@/assets/images/grocery.png') },
@@ -39,17 +39,7 @@ const MOCK_CATEGORIES: Category[] = [
   { id: '5', name: 'Baby', icon: require('@/assets/images/babyCare.png') },
 ];
 
-
-
 // Category Item Component
-const CategoryItem = ({ category, onPress }: { category: Category; onPress?: () => void }) => (
-  <TouchableOpacity style={styles.categoryItem} onPress={onPress}>
-    <View style={styles.categoryIconContainer}>
-      <RNImage source={category.icon} style={styles.categoryIconImage} resizeMode="cover" />
-    </View>
-    <Text style={styles.categoryName}>{category.name}</Text>
-  </TouchableOpacity>
-);
 const CategoryItem = ({ category, onPress }: { category: Category; onPress?: () => void }) => {
   const [isPressed, setIsPressed] = useState(false);
   
@@ -68,7 +58,6 @@ const CategoryItem = ({ category, onPress }: { category: Category; onPress?: () 
     </TouchableOpacity>
   );
 };
-
 // Product Card Component
 const ProductCard = ({ product, onPress }: { product: Product; onPress?: () => void }) => {
   const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
@@ -116,14 +105,13 @@ const ProductCard = ({ product, onPress }: { product: Product; onPress?: () => v
       )}
 
       <View style={styles.productInfo}>
-        <Text style={styles.productCategory}>{product.category.toUpperCase()}</Text>
+
         <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
         
         {/* Rating */}
         <View style={styles.ratingRow}>
           <Text style={styles.ratingIcon}>⭐</Text>
           <Text style={styles.ratingText}>{product.rating}</Text>
-          <Text style={styles.reviewsText}>({product.reviews})</Text>
         </View>
         
         {/* Price Section */}
@@ -176,7 +164,7 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { addToCart, cartItems } = useCart();
   const { products: allProducts, loading: productsLoading } = useProducts();
-  const [categories] = useState<Category[]>(MOCK_CATEGORIES);
+
   const [activeTab, setActiveTab] = useState<'delivery' | 'offers'>('delivery');
   const slideAnim = useRef(new Animated.Value(100)).current;
 
@@ -259,23 +247,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Categories Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>Categories</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.categoriesScroll}
-          >
-            {categories.map((category) => (
-              <CategoryItem
-                key={category.id}
-                category={category}
-                onPress={() => router.push(`/(tabs)/category?name=${category.name}`)}
-              />
-            ))}
-          </ScrollView>
-        </View>
 
         {/* Promotional Banner */}
         <View style={styles.section}>

@@ -42,15 +42,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass" color={color} />,
         }}
       />
-       <Tabs.Screen
-        name="category"
-        options={{
-          title: 'Category',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="square.grid.2x2" color={color} />,
-        }}
-      />
-     
-    
+
        <Tabs.Screen
         name="cart"
         options={{
