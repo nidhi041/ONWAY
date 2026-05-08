@@ -1,3 +1,4 @@
+import AddToCartButton from '@/components/AddToCartButton';
 import { PRODUCTS, Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
@@ -40,12 +41,12 @@ const RECENT_SEARCHES: string[] = [
 ];
 
 const SEARCH_CATEGORIES = [
-  { id: '1', name: 'Groceries', icon: '🛒' },
-  { id: '2', name: 'Medicine', icon: '💊' },
-  { id: '3', name: 'Beauty', icon: '💄' },
-  { id: '4', name: 'Electronics', icon: '📱' },
-  { id: '5', name: 'Clothing', icon: '👕' },
-  { id: '6', name: 'Home & Kitchen', icon: '🏠' },
+  { id: '1', name: 'Pain Relief', icon: '💊' },
+  { id: '2', name: 'Cold & Flu', icon: '🤧' },
+  { id: '3', name: 'Vitamins', icon: '🍊' },
+  { id: '4', name: 'First Aid', icon: '🩹' },
+  { id: '5', name: 'Digestive Health', icon: '💚' },
+  { id: '6', name: 'Allergy Relief', icon: '🌸' },
 ];
 
 export default function SearchScreen() {
@@ -54,24 +55,25 @@ export default function SearchScreen() {
   const [recentSearches, setRecentSearches] = useState(RECENT_SEARCHES);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
 
-  const handleSearch = useCallback((text: string) => {
-    if (text.trim()) {
-      // Add to recent searches
-      if (!recentSearches.includes(text)) {
-        setRecentSearches([text, ...recentSearches.slice(0, 4)]);
+  const handleSearch = useCallback(
+    (text: string) => {
+      if (text.trim()) {
+        if (!recentSearches.includes(text)) {
+          setRecentSearches([text, ...recentSearches.slice(0, 4)]);
+        }
+        const results = PRODUCTS.filter(
+          (product) =>
+            product.name.toLowerCase().includes(text.toLowerCase()) ||
+            product.brand?.toLowerCase().includes(text.toLowerCase()) ||
+            product.category.toLowerCase().includes(text.toLowerCase()) ||
+            product.description?.toLowerCase().includes(text.toLowerCase())
+        );
+        setSearchResults(results);
+        setSearchText(text);
       }
-      
-      // Filter products based on search text
-      const results = PRODUCTS.filter((product) =>
-        product.name.toLowerCase().includes(text.toLowerCase()) ||
-          product.name.toLowerCase().includes(text.toLowerCase()) ||
-          (product.brand && product.brand.toLowerCase().includes(text.toLowerCase()))
-      );
-      
-      setSearchResults(results);
-      setSearchText(text);
-    }
-  }, [recentSearches]);
+    },
+    [recentSearches]
+  );
 
   const handleClearSearch = () => {
     setSearchText('');
@@ -82,7 +84,6 @@ export default function SearchScreen() {
     setRecentSearches([]);
   };
 
-  // Product Card Component for search results
   const SearchResultCard = ({ product }: { product: Product }) => (
     <TouchableOpacity
       style={styles.searchResultCard}
@@ -109,6 +110,7 @@ export default function SearchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
       <View style={styles.topBar} />
+
       {/* Search Bar */}
       <View style={styles.searchBarContainer}>
         <View style={styles.searchBarWrapper}>
@@ -129,7 +131,6 @@ export default function SearchScreen() {
       </View>
 
       {searchText && searchResults.length > 0 ? (
-        // Show Search Results
         <View style={styles.resultsContainer}>
           <Text style={[styles.resultsCountText, { color: Colors.light.text }]}>
             Found {searchResults.length} products
@@ -140,25 +141,20 @@ export default function SearchScreen() {
             keyExtractor={(item) => item.id}
             numColumns={2}
             columnWrapperStyle={styles.resultGrid}
-            scrollEnabled={true}
             contentContainerStyle={styles.resultContent}
           />
         </View>
       ) : searchText && searchResults.length === 0 ? (
-        // No Results Found
         <ScrollView style={styles.scrollView}>
           <View style={styles.noResultsContainer}>
             <Text style={styles.noResultsEmoji}>🔍</Text>
             <Text style={[styles.noResultsText, { color: Colors.light.text }]}>
               No products found
             </Text>
-            <Text style={styles.noResultsSubtext}>
-              Try searching with different keywords
-            </Text>
+            <Text style={styles.noResultsSubtext}>Try searching with different keywords</Text>
           </View>
         </ScrollView>
       ) : (
-        // Show Popular Searches, Recent Searches, and Categories
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Popular Searches */}
           <View style={styles.section}>
@@ -197,16 +193,14 @@ export default function SearchScreen() {
                   onPress={() => handleSearch(search)}
                 >
                   <Text style={styles.recentIcon}>⏱️</Text>
-                  <Text style={[styles.recentText, { color: Colors.light.text }]}>
-                    {search}
-                  </Text>
+                  <Text style={[styles.recentText, { color: Colors.light.text }]}>{search}</Text>
                   <Text style={styles.recentArrow}>›</Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
 
-          {/* Search Categories */}
+          {/* Browse by Category */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>
               Browse by Category
@@ -231,275 +225,122 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  topBar: { height: 12, backgroundColor: '#ffffff' },
+  scrollView: { flex: 1 },
   searchBarContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    paddingTop: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#E0E0E0',
   },
   searchBarWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    height: 46,
-    gap: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    height: 44,
+    gap: 8,
   },
-  searchIcon: {
-    fontSize: 16,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#1a1a2e',
-    padding: 0,
-    fontWeight: '500',
-  },
-  clearIcon: {
-    fontSize: 16,
-    color: '#999',
-  },
-  scrollView: {
-    flex: 1,
-    paddingTop: 0,
-  },
-  topBar: {
-    height: 12,
-    backgroundColor: '#ffffff',
-  },
+  searchIcon: { fontSize: 20 },
+  searchInput: { flex: 1, fontSize: 14, color: '#333', padding: 0 },
+  clearIcon: { fontSize: 18, color: '#999' },
   section: {
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
+    borderBottomColor: '#F0F0F0',
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 14,
-    color: '#1a1a2e',
-    letterSpacing: 0.2,
-  },
-  suggestionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
+  sectionTitle: { fontSize: 14, fontWeight: '700', marginBottom: 12 },
+  suggestionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   suggestionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f8ff',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    gap: 8,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 6,
     borderWidth: 1,
-    borderColor: '#e0e8ff',
-    elevation: 1,
-    shadowColor: '#0C63E4',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    borderColor: '#E0E8FF',
   },
-  suggestionIcon: {
-    fontSize: 16,
-  },
-  suggestionText: {
-    fontSize: 13,
-    color: '#0C63E4',
-    fontWeight: '600',
-  },
+  suggestionIcon: { fontSize: 16 },
+  suggestionText: { fontSize: 12, color: '#333', fontWeight: '500' },
   recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
-  clearText: {
-    fontSize: 12,
-    color: '#0C63E4',
-    fontWeight: '700',
-  },
+  clearText: { fontSize: 12, color: '#FF6B35', fontWeight: '700' },
   recentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 8,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
+    borderBottomColor: '#F5F5F5',
   },
-  recentIcon: {
-    fontSize: 16,
-  },
-  recentText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1a1a2e',
-  },
-  recentArrow: {
-    fontSize: 16,
-    color: '#999',
-  },
-  categoriesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-  },
+  recentIcon: { fontSize: 16 },
+  recentText: { flex: 1, fontSize: 13, fontWeight: '500' },
+  recentArrow: { fontSize: 16, color: '#999' },
+  categoriesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   categoryBox: {
-    width: '30%',
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    paddingVertical: 16,
+    width: '31%',
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    paddingVertical: 12,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
+    borderColor: '#E8E8E8',
   },
-  categoryIcon: {
-    fontSize: 32,
-  },
-  categoryName: {
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-    color: '#1a1a2e',
-  },
-  bottomSpacing: {
-    height: 20,
-  },
-  // Search Results Styles
-  resultsContainer: {
-    flex: 1,
-    paddingHorizontal: 8,
-    paddingTop: 16,
-  },
+  categoryIcon: { fontSize: 28 },
+  categoryName: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  bottomSpacing: { height: 20 },
+  resultsContainer: { flex: 1, paddingHorizontal: 8, paddingTop: 12 },
   resultsCountText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     paddingHorizontal: 8,
-    marginBottom: 14,
-    color: '#1a1a2e',
+    marginBottom: 12,
   },
   searchResultCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 12,
     margin: 8,
     overflow: 'hidden',
     elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    borderWidth: 1,
-    borderColor: '#f5f5f5',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
-  resultImage: {
-    width: '100%',
-    height: 140,
-    backgroundColor: '#F5F5F5',
-  },
-  resultInfo: {
-    padding: 12,
-  },
-  resultBrand: {
-    fontSize: 10,
-    color: '#999',
-    fontWeight: '700',
-    marginBottom: 4,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  resultName: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 8,
-    height: 32,
-    color: '#1a1a2e',
-  },
+  resultImage: { width: '100%', height: 140, backgroundColor: '#F5F5F5' },
+  resultInfo: { padding: 10 },
+  resultBrand: { fontSize: 10, color: '#2196F3', fontWeight: '700', marginBottom: 4 },
+  resultName: { fontSize: 13, fontWeight: '600', marginBottom: 6, height: 32 },
   resultPriceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  resultPrice: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#22C55E',
-  },
-  resultRating: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '600',
-  },
-  resultAddButtonContainer: {
-    marginTop: 8,
-  resultAddButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#0C63E4',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#0C63E4',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-  },
-  resultAddButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: 'white',
-  },
-  resultGrid: {
-    justifyContent: 'space-between',
-  },
-  resultContent: {
-    paddingBottom: 20,
-  },
+  resultPrice: { fontSize: 14, fontWeight: '700', color: '#2196F3' },
+  resultRating: { fontSize: 11, color: '#666' },
+  resultAddButtonContainer: { marginTop: 8 },
+  resultGrid: { justifyContent: 'space-between' },
+  resultContent: { paddingBottom: 20 },
   noResultsContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 80,
   },
-  noResultsEmoji: {
-    fontSize: 60,
-    marginBottom: 16,
-  },
-  noResultsText: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
-    color: '#1a1a2e',
-  },
-  noResultsSubtext: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-  },
+  noResultsEmoji: { fontSize: 60, marginBottom: 16 },
+  noResultsText: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
+  noResultsSubtext: { fontSize: 14, color: '#999', textAlign: 'center' },
 });

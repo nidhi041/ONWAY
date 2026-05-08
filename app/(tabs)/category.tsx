@@ -1,5 +1,5 @@
 import AddToCartButton from '@/components/AddToCartButton';
-import { Product } from '@/constants/products';
+import { PRODUCTS, Product } from '@/constants/products';
 import { Colors } from '@/constants/theme';
 import { useProducts } from '@/hooks/useFirestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -50,19 +50,41 @@ const ProductCard = ({ product, onPress }: { product: Product; onPress?: () => v
 export default function CategoryScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const categoryName = (params.name as string) || 'grocery';
-  const { products: allProducts, loading } = useProducts();
-  const [activeFilter] = useState<FilterOption>('all');
-  const [sortBy] = useState<SortOption>('popularity');
+  const categoryName = (params.name as string) || 'Medicines';
+  const { products: firestoreProducts, loading } = useProducts();
+  const [activeFilter, setActiveFilter] = useState<FilterOption>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('popularity');
   const [products, setProducts] = useState<Product[]>([]);
 
-  // Filter products by category from Firestore
   useEffect(() => {
-    const filteredProducts = allProducts.filter(
-      (product) => product.category.toLowerCase() === categoryName.toLowerCase()
+    // Use Firestore products if available, otherwise fall back to local PRODUCTS
+    const source = firestoreProducts.length > 0 ? firestoreProducts : PRODUCTS;
+
+    // Exact case-insensitive match on category
+    let filtered = source.filter(
+      (p) => p.category.toLowerCase() === categoryName.toLowerCase()
     );
-    setProducts(filteredProducts);
-  }, [allProducts, categoryName]);
+
+    // Apply filter chips
+    if (activeFilter === 'price-low-high') {
+      filtered = [...filtered].sort((a, b) => a.price - b.price);
+    } else if (activeFilter === 'rating-40') {
+      filtered = filtered.filter((p) => p.rating >= 4.0);
+    } else if (activeFilter === 'fast-deliver') {
+      filtered = filtered.filter((p) => (p.deliveryTime ?? 99) <= 12);
+    }
+
+    // Apply sort
+    if (sortBy === 'price-low') {
+      filtered = [...filtered].sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'price-high') {
+      filtered = [...filtered].sort((a, b) => b.price - a.price);
+    } else if (sortBy === 'rating') {
+      filtered = [...filtered].sort((a, b) => b.rating - a.rating);
+    }
+
+    setProducts(filtered);
+  }, [firestoreProducts, categoryName, activeFilter, sortBy]);
 
   const filterOptions: FilterOption[] = ['all', 'price-low-high', 'rating-40', 'fast-deliver'];
   const filterLabels: Record<FilterOption, string> = {
@@ -95,11 +117,9 @@ export default function CategoryScreen() {
               <Text style={styles.backButton}>{'<'}</Text>
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: Colors.light.text }]}>
-              {categoryName.charAt(0).toUpperCase() + categoryName.slice(1)}
+              {categoryName}
             </Text>
-            <TouchableOpacity>
-              <Text style={styles.filterIcon}>☰</Text>
-            </TouchableOpacity>
+            <View style={{ width: 24 }} />
           </View>
 
           {/* Filter Chips */}
@@ -116,6 +136,7 @@ export default function CategoryScreen() {
                   styles.filterChip,
                   activeFilter === filter && styles.filterChipActive,
                 ]}
+                onPress={() => setActiveFilter(filter)}
               >
                 <Text
                   style={[
@@ -129,40 +150,57 @@ export default function CategoryScreen() {
             ))}
           </ScrollView>
 
-          {/* Showing items count */}
-          <View style={styles.countContainer}>
+          {/* Count + Sort row */}
+          <View style={styles.metaRow}>
             <Text style={[styles.countText, { color: Colors.light.text }]}>
-              Showing {products.length} items
+              {products.length} {products.length === 1 ? 'item' : 'items'}
             </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortChips}>
+              {sortOptions.map((opt) => (
+                <TouchableOpacity
+                  key={opt}
+                  style={[styles.sortChip, sortBy === opt && styles.sortChipActive]}
+                  onPress={() => setSortBy(opt)}
+                >
+                  <Text style={[styles.sortChipText, sortBy === opt && styles.sortChipTextActive]}>
+                    {sortLabels[opt]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
 
-          {/* Sort dropdown */}
-          <View style={styles.sortContainer}>
-            <TouchableOpacity style={styles.sortButton}>
-              <Text style={styles.sortLabel}>Sort by: {sortLabels[sortBy]}</Text>
-              <Text style={styles.sortDropdown}>▼</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Empty state */}
+          {products.length === 0 && (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyEmoji}>🔍</Text>
+              <Text style={styles.emptyTitle}>No products found</Text>
+              <Text style={styles.emptySubtitle}>
+                No items in "{categoryName}" match the selected filters.
+              </Text>
+            </View>
+          )}
 
           {/* Product Grid */}
-          <View style={styles.gridContainer}>
-            <FlatList
-              data={products}
-              renderItem={({ item }) => (
-                <ProductCard
-                  product={item}
-                  onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
-                />
-              )}
-              keyExtractor={(item) => item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.gridRow}
-              scrollEnabled={false}
-              contentContainerStyle={styles.gridContent}
-            />
-          </View>
+          {products.length > 0 && (
+            <View style={styles.gridContainer}>
+              <FlatList
+                data={products}
+                renderItem={({ item }) => (
+                  <ProductCard
+                    product={item}
+                    onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
+                  />
+                )}
+                keyExtractor={(item) => item.id}
+                numColumns={2}
+                columnWrapperStyle={styles.gridRow}
+                scrollEnabled={false}
+                contentContainerStyle={styles.gridContent}
+              />
+            </View>
+          )}
 
-          {/* Bottom spacer for nav bar */}
           <View style={styles.bottomSpacer} />
         </ScrollView>
       )}
@@ -245,34 +283,63 @@ const styles = StyleSheet.create({
   filterChipTextActive: {
     color: 'white',
   },
-  countContainer: {
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 10,
+    gap: 12,
   },
   countText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1a1a2e',
+    minWidth: 60,
   },
-  sortContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-  },
-  sortButton: {
+  sortChips: {
     flexDirection: 'row',
+    gap: 8,
+  },
+  sortChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  sortChipActive: {
+    backgroundColor: '#0C63E4',
+    borderColor: '#0C63E4',
+  },
+  sortChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#555',
+  },
+  sortChipTextActive: {
+    color: 'white',
+  },
+  emptyContainer: {
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    paddingVertical: 60,
+    paddingHorizontal: 32,
   },
-  sortLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0C63E4',
-    marginRight: 8,
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
   },
-  sortDropdown: {
-    fontSize: 10,
-    color: '#0C63E4',
+  emptyTitle: {
+    fontSize: 18,
     fontWeight: '700',
+    color: '#1a1a2e',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#999',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   gridContainer: {
     paddingHorizontal: 16,

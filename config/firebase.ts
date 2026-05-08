@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp } from 'firebase/app';
 import { getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { Platform } from 'react-native';
 
 const firebaseConfig = {
@@ -27,8 +27,14 @@ if (Platform.OS !== 'web') {
   auth = getAuth(app);
 }
 
-// Initialize Firestore Database
-export const db = getFirestore(app);
+// Initialize Firestore with offline persistence
+export const db = Platform.OS === 'web'
+  ? initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    })
+  : initializeFirestore(app, {
+      experimentalForceLongPolling: true, // improves connectivity on Android
+    });
 
 export { auth };
 export default app;

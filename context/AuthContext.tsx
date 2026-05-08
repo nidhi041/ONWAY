@@ -2,11 +2,11 @@ import { auth, db } from '@/config/firebase';
 import {
     createUserWithEmailAndPassword,
     User as FirebaseUser,
+    GoogleAuthProvider,
     onAuthStateChanged,
+    signInWithCredential,
     signInWithEmailAndPassword,
     signOut,
-    GoogleAuthProvider,
-    signInWithCredential,
 } from 'firebase/auth';
 import {
     doc,
@@ -61,9 +61,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Listen to Firebase auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      try {
-        if (firebaseUser) {
-          // Fetch user data from Firestore
+      if (firebaseUser) {
+        // Always set a basic user from auth data first so the app works offline
+        const basicUser: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+          email: firebaseUser.email || '',
+          phone: '',
+          avatar: '👤',
+        };
+        setUser(basicUser);
+        setIsLoading(false);
+
+        // Then try to enrich with Firestore profile data
+        try {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDocSnap = await getDoc(userDocRef);
 
@@ -71,28 +82,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const userData = userDocSnap.data();
             setUser({
               id: firebaseUser.uid,
-              name: userData.name || '',
+              name: userData.name || basicUser.name,
               email: firebaseUser.email || '',
               phone: userData.phone || '',
               avatar: userData.avatar || '👤',
             });
-          } else {
-            // If no user doc, create basic user object
-            setUser({
-              id: firebaseUser.uid,
-              name: firebaseUser.email?.split('@')[0] || 'User',
-              email: firebaseUser.email || '',
-              phone: '',
-              avatar: '👤',
-            });
           }
-        } else {
-          setUser(null);
+        } catch (error) {
+          // Firestore offline — keep the basic user set above, don't log out
+          console.warn('Could not fetch Firestore profile (offline?), using auth data:', error);
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
+      } else {
         setUser(null);
-      } finally {
         setIsLoading(false);
       }
     });
