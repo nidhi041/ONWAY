@@ -51,12 +51,35 @@ export const createRazorpayOrder = async (
   request: RazorpayOrderRequest
 ): Promise<RazorpayOrderResponse> => {
   try {
-    // TEST MODE: Return mock order for testing UI without backend
+    // TEST MODE: Create real Razorpay order for testing UI without backend
     if (TEST_MODE) {
-      console.log('🧪 TEST MODE: Returning mock Razorpay order');
+      console.log('🧪 TEST MODE: Creating Razorpay order via direct API call');
+      
+      // Basic Auth using test credentials
+      const credentials = btoa('rzp_test_Shgq35vj7SGKmI:1K42iFgK0cUiYdaTDYHDhosK');
+      
+      const rzpResponse = await fetch('https://api.razorpay.com/v1/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${credentials}`
+        },
+        body: JSON.stringify({
+          amount: Math.round(request.amount * 100), // convert to paise
+          currency: 'INR',
+          receipt: `rcptid_${Date.now()}`
+        })
+      });
+
+      if (!rzpResponse.ok) {
+        throw new Error('Failed to create Razorpay test order');
+      }
+
+      const rzpData = await rzpResponse.json();
+
       return {
         orderId: `order_${Date.now()}`,
-        razorpayOrderId: `order_${Math.random().toString(36).substr(2, 9)}`,
+        razorpayOrderId: rzpData.id,
         amount: request.amount,
         currency: 'INR',
         keyId: 'rzp_test_Shgq35vj7SGKmI', // Test key
