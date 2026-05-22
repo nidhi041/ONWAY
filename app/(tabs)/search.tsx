@@ -23,15 +23,6 @@ interface SearchSuggestion {
   icon: string;
 }
 
-const POPULAR_SEARCHES: SearchSuggestion[] = [
-  { id: '1', text: 'Milk', icon: '🥛' },
-  { id: '2', text: 'Bread', icon: '🍞' },
-  { id: '3', text: 'Eggs', icon: '🥚' },
-  { id: '4', text: 'Fruits', icon: '🍎' },
-  { id: '5', text: 'Vegetables', icon: '🥦' },
-  { id: '6', text: 'Coffee', icon: '☕' },
-];
-
 const RECENT_SEARCHES: string[] = [
   'Paracetamol',
   'Hand Sanitizer',
@@ -156,25 +147,6 @@ export default function SearchScreen() {
         </ScrollView>
       ) : (
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Popular Searches */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>
-              Popular Searches
-            </Text>
-            <View style={styles.suggestionsGrid}>
-              {POPULAR_SEARCHES.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.suggestionChip}
-                  onPress={() => handleSearch(item.text)}
-                >
-                  <Text style={styles.suggestionIcon}>{item.icon}</Text>
-                  <Text style={styles.suggestionText}>{item.text}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
             <View style={styles.section}>
