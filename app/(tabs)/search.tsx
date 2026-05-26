@@ -12,16 +12,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const W = Dimensions.get('window').width;
 const CARD_W = (W - 40 - 12) / 2;
 
-const POPULAR = [
-  { id: '1', text: 'Paracetamol', icon: '💊', color: '#EFF6FF' },
-  { id: '2', text: 'Vitamins',    icon: '🧴', color: '#F0FDFA' },
-  { id: '3', text: 'Sanitizer',   icon: '🧼', color: '#FDF4FF' },
-  { id: '4', text: 'Protein',     icon: '💪', color: '#FFFBEB' },
-  { id: '5', text: 'Skin Care',   icon: '✨', color: '#FFF1F2' },
-  { id: '6', text: 'Coffee',      icon: '☕', color: '#FEF3C7' },
-];
+interface SearchSuggestion {
+  id: string;
+  text: string;
+  icon: string;
+}
 
-const RECENT_DEFAULT = ['Paracetamol', 'Hand Sanitizer', 'Red Bull', 'Serum'];
+const RECENT_SEARCHES: string[] = [
+  'Paracetamol',
+  'Hand Sanitizer',
+  'Banana',
+  'Chicken',
+  'Rice',
+];
 
 const CATS = [
   { id: '1', name: 'Pain Relief', icon: '💊', color: '#EFF6FF' },
