@@ -11,9 +11,9 @@ Google OAuth authentication has been integrated into the login and signup pages.
 2. Select your project: **onway-f5999**
 3. Navigate to **APIs & Services** → **Credentials**
 4. Find or create an **OAuth 2.0 Client ID** for your application type:
-   - For Web: `onway-f5999`
-   - For Android/iOS: Each platform may need separate client IDs
-5. Copy the **Web Client ID** (format: `{number}-{hash}.apps.googleusercontent.com`)
+   - Web Client ID: `40420149902-40c5dv01ohpul08gknr12ef6ftl2cu2p.apps.googleusercontent.com`
+   - Client Secret: `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`
+5. Copy the **Web Client ID**
 
 ### 2. Update AuthContext Configuration
 
@@ -21,7 +21,7 @@ In `context/AuthContext.tsx`, line ~52, update the webClientId:
 
 ```typescript
 GoogleSignin.configure({
-  webClientId: 'YOUR_WEB_CLIENT_ID_HERE', // Replace with your actual Web Client ID
+  webClientId: '40420149902-40c5dv01ohpul08gknr12ef6ftl2cu2p.apps.googleusercontent.com', // Replace with your actual Web Client ID
 });
 ```
 

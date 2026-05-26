@@ -41,16 +41,16 @@ Google OAuth has been integrated using **expo-auth-session**, which is compatibl
 
 ### 4. Update Your App Configuration
 
-In `context/AuthContext.tsx`, find this line (around line 60):
+In `app/login.tsx` and `app/signup.tsx`, find these lines (around line 25):
 
 ```typescript
 const [request, response, promptAsync] = Google.useAuthRequest({
-  clientId: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com', // ← Update this
-  redirectUrl: Google.getRedirectUrl(),
+  webClientId: '40420149902-40c5dv01ohpul08gknr12ef6ftl2cu2p.apps.googleusercontent.com',
+  clientId: '40420149902-40c5dv01ohpul08gknr12ef6ftl2cu2p.apps.googleusercontent.com',
 });
 ```
 
-Replace `YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com` with your actual Client ID.
+Replace the client ID with your actual Web Client ID.
 
 ### 5. Enable Google Sign-In in Firebase Console
 

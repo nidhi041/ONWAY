@@ -4,18 +4,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to read and write their own user document and nested collections
-    match /users/{userId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-    
-    // Allow users to read and write their own cart (nested under users)
-    match /users/{userId}/cart/{document=**} {
-      allow read, write: if request.auth.uid == userId;
-    }
-    
-    // Allow users to read and write their own orders (nested under users)
-    match /users/{userId}/orders/{document=**} {
+    // Allow users to read and write their own user document and all nested subcollections
+    // (This recursively covers: /users/{userId}, /users/{userId}/addresses, /users/{userId}/cart,
+    //  /users/{userId}/orders, /users/{userId}/paymentMethods, /users/{userId}/notifications)
+    match /users/{userId}/{document=**} {
       allow read, write: if request.auth.uid == userId;
     }
     

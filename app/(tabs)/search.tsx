@@ -1,346 +1,273 @@
 import AddToCartButton from '@/components/AddToCartButton';
 import { PRODUCTS, Product } from '@/constants/products';
-import { Colors } from '@/constants/theme';
+import { C, shadow } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-    Dimensions,
-    FlatList,
-    Image as RNImage,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+    Dimensions, FlatList, Image as RNImage, ScrollView,
+    StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const W = Dimensions.get('window').width;
+const CARD_W = (W - 40 - 12) / 2;
 
-interface SearchSuggestion {
-  id: string;
-  text: string;
-  icon: string;
-}
-
-const POPULAR_SEARCHES: SearchSuggestion[] = [
-  { id: '1', text: 'Milk', icon: '🥛' },
-  { id: '2', text: 'Bread', icon: '🍞' },
-  { id: '3', text: 'Eggs', icon: '🥚' },
-  { id: '4', text: 'Fruits', icon: '🍎' },
-  { id: '5', text: 'Vegetables', icon: '🥦' },
-  { id: '6', text: 'Coffee', icon: '☕' },
+const POPULAR = [
+  { id: '1', text: 'Paracetamol', icon: '💊', color: '#EFF6FF' },
+  { id: '2', text: 'Vitamins',    icon: '🧴', color: '#F0FDFA' },
+  { id: '3', text: 'Sanitizer',   icon: '🧼', color: '#FDF4FF' },
+  { id: '4', text: 'Protein',     icon: '💪', color: '#FFFBEB' },
+  { id: '5', text: 'Skin Care',   icon: '✨', color: '#FFF1F2' },
+  { id: '6', text: 'Coffee',      icon: '☕', color: '#FEF3C7' },
 ];
 
-const RECENT_SEARCHES: string[] = [
-  'Paracetamol',
-  'Hand Sanitizer',
-  'Banana',
-  'Chicken',
-  'Rice',
-];
+const RECENT_DEFAULT = ['Paracetamol', 'Hand Sanitizer', 'Red Bull', 'Serum'];
 
-const SEARCH_CATEGORIES = [
-  { id: '1', name: 'Pain Relief', icon: '💊' },
-  { id: '2', name: 'Cold & Flu', icon: '🤧' },
-  { id: '3', name: 'Vitamins', icon: '🍊' },
-  { id: '4', name: 'First Aid', icon: '🩹' },
-  { id: '5', name: 'Digestive Health', icon: '💚' },
-  { id: '6', name: 'Allergy Relief', icon: '🌸' },
+const CATS = [
+  { id: '1', name: 'Pain Relief', icon: '💊', color: '#EFF6FF' },
+  { id: '2', name: 'Cold & Flu',  icon: '🤧', color: '#EFF6FF' },
+  { id: '3', name: 'Vitamins',    icon: '🍊', color: '#F0FDFA' },
+  { id: '4', name: 'First Aid',   icon: '🩹', color: '#FFF1F2' },
+  { id: '5', name: 'Digestive',   icon: '💚', color: '#F0FDFA' },
+  { id: '6', name: 'Allergy',     icon: '🌸', color: '#FDF4FF' },
 ];
 
 export default function SearchScreen() {
   const router = useRouter();
-  const [searchText, setSearchText] = useState('');
-  const [recentSearches, setRecentSearches] = useState(RECENT_SEARCHES);
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [query, setQuery] = useState('');
+  const [recent, setRecent] = useState(RECENT_DEFAULT);
+  const [results, setResults] = useState<Product[]>([]);
 
-  const handleSearch = useCallback(
-    (text: string) => {
-      if (text.trim()) {
-        if (!recentSearches.includes(text)) {
-          setRecentSearches([text, ...recentSearches.slice(0, 4)]);
-        }
-        const results = PRODUCTS.filter(
-          (product) =>
-            product.name.toLowerCase().includes(text.toLowerCase()) ||
-            product.brand?.toLowerCase().includes(text.toLowerCase()) ||
-            product.category.toLowerCase().includes(text.toLowerCase()) ||
-            product.description?.toLowerCase().includes(text.toLowerCase())
-        );
-        setSearchResults(results);
-        setSearchText(text);
-      }
-    },
-    [recentSearches]
-  );
+  const search = useCallback((text: string) => {
+    setQuery(text);
+    if (text.trim()) {
+      if (!recent.includes(text)) setRecent(r => [text, ...r.slice(0, 4)]);
+      setResults(PRODUCTS.filter(p =>
+        p.name.toLowerCase().includes(text.toLowerCase()) ||
+        p.brand?.toLowerCase().includes(text.toLowerCase()) ||
+        p.category.toLowerCase().includes(text.toLowerCase())
+      ));
+    } else {
+      setResults([]);
+    }
+  }, [recent]);
 
-  const handleClearSearch = () => {
-    setSearchText('');
-    setSearchResults([]);
-  };
-
-  const handleClearRecent = () => {
-    setRecentSearches([]);
-  };
-
-  const SearchResultCard = ({ product }: { product: Product }) => (
+  const ResultCard = ({ product }: { product: Product }) => (
     <TouchableOpacity
-      style={styles.searchResultCard}
+      style={st.resultCard}
       onPress={() => router.push(`/product?id=${product.id}&name=${product.name}`)}
-      activeOpacity={0.9}
+      activeOpacity={0.88}
     >
-      <RNImage source={product.image} style={styles.resultImage} resizeMode="cover" />
-      <View style={styles.resultInfo}>
-        <Text style={styles.resultBrand}>{product.brand}</Text>
-        <Text style={[styles.resultName, { color: Colors.light.text }]} numberOfLines={2}>
-          {product.name}
-        </Text>
-        <View style={styles.resultPriceRow}>
-          <Text style={styles.resultPrice}>₹{product.price}</Text>
-          <Text style={styles.resultRating}>⭐ {product.rating}</Text>
+      <View style={st.resultImgBox}>
+        <RNImage source={product.image} style={st.resultImg} resizeMode="cover" />
+      </View>
+      <View style={st.resultBody}>
+        <Text style={st.resultBrand}>{product.brand}</Text>
+        <Text style={st.resultName} numberOfLines={2}>{product.name}</Text>
+        <View style={st.resultPriceRow}>
+          <Text style={st.resultPrice}>₹{product.price}</Text>
+          <Text style={st.resultRating}>★ {product.rating}</Text>
         </View>
-        <View style={styles.resultAddButtonContainer}>
-          <AddToCartButton product={product} size="small" />
-        </View>
+        <AddToCartButton product={product} size="small" />
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
-      <View style={styles.topBar} />
+    <SafeAreaView style={st.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
 
-      {/* Search Bar */}
-      <View style={styles.searchBarContainer}>
-        <View style={styles.searchBarWrapper}>
-          <Text style={styles.searchIcon}>🔍</Text>
+      {/* Search bar */}
+      <View style={st.searchWrap}>
+        <View style={st.searchBar}>
+          <Text style={st.searchIcon}>🔍</Text>
           <TextInput
-            style={styles.searchInput}
-            placeholder="Search for products..."
-            placeholderTextColor="#999"
-            value={searchText}
-            onChangeText={handleSearch}
+            style={st.searchInput}
+            placeholder="Search medicines, vitamins, health products…"
+            placeholderTextColor={C.inkMuted}
+            value={query}
+            onChangeText={search}
+            returnKeyType="search"
+            autoFocus={false}
           />
-          {searchText ? (
-            <TouchableOpacity onPress={handleClearSearch}>
-              <Text style={styles.clearIcon}>✕</Text>
+          {query ? (
+            <TouchableOpacity
+              style={st.clearBtn}
+              onPress={() => { setQuery(''); setResults([]); }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={st.clearIcon}>✕</Text>
             </TouchableOpacity>
           ) : null}
         </View>
       </View>
 
-      {searchText && searchResults.length > 0 ? (
-        <View style={styles.resultsContainer}>
-          <Text style={[styles.resultsCountText, { color: Colors.light.text }]}>
-            Found {searchResults.length} products
+      {/* Results */}
+      {query && results.length > 0 ? (
+        <View style={{ flex: 1 }}>
+          <Text style={st.resultsLabel}>
+            {results.length} result{results.length !== 1 ? 's' : ''} for "{query}"
           </Text>
           <FlatList
-            data={searchResults}
-            renderItem={({ item }) => <SearchResultCard product={item} />}
-            keyExtractor={(item) => item.id}
+            data={results}
+            renderItem={({ item }) => <ResultCard product={item} />}
+            keyExtractor={i => i.id}
             numColumns={2}
-            columnWrapperStyle={styles.resultGrid}
-            contentContainerStyle={styles.resultContent}
+            columnWrapperStyle={st.resultGrid}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+            showsVerticalScrollIndicator={false}
           />
         </View>
-      ) : searchText && searchResults.length === 0 ? (
-        <ScrollView style={styles.scrollView}>
-          <View style={styles.noResultsContainer}>
-            <Text style={styles.noResultsEmoji}>🔍</Text>
-            <Text style={[styles.noResultsText, { color: Colors.light.text }]}>
-              No products found
-            </Text>
-            <Text style={styles.noResultsSubtext}>Try searching with different keywords</Text>
-          </View>
-        </ScrollView>
+      ) : query && results.length === 0 ? (
+        <View style={st.empty}>
+          <View style={st.emptyIconBox}><Text style={st.emptyIcon}>🔍</Text></View>
+          <Text style={st.emptyTitle}>No results found</Text>
+          <Text style={st.emptySub}>Try different keywords or browse categories below</Text>
+        </View>
       ) : (
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Popular Searches */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>
-              Popular Searches
-            </Text>
-            <View style={styles.suggestionsGrid}>
-              {POPULAR_SEARCHES.map((item) => (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Popular */}
+          <View style={st.section}>
+            <Text style={st.sectionTitle}>Popular Searches</Text>
+            <View style={st.pillsWrap}>
+              {POPULAR.map(p => (
                 <TouchableOpacity
-                  key={item.id}
-                  style={styles.suggestionChip}
-                  onPress={() => handleSearch(item.text)}
+                  key={p.id}
+                  style={[st.pill, { backgroundColor: p.color }]}
+                  onPress={() => search(p.text)}
+                  activeOpacity={0.75}
                 >
-                  <Text style={styles.suggestionIcon}>{item.icon}</Text>
-                  <Text style={styles.suggestionText}>{item.text}</Text>
+                  <Text style={st.pillIcon}>{p.icon}</Text>
+                  <Text style={st.pillText}>{p.text}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          {/* Recent Searches */}
-          {recentSearches.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.recentHeader}>
-                <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>
-                  Recent Searches
-                </Text>
-                <TouchableOpacity onPress={handleClearRecent}>
-                  <Text style={styles.clearText}>Clear</Text>
+          {/* Recent */}
+          {recent.length > 0 && (
+            <View style={st.section}>
+              <View style={st.sectionRow}>
+                <Text style={st.sectionTitle}>Recent Searches</Text>
+                <TouchableOpacity onPress={() => setRecent([])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={st.clearAll}>Clear all</Text>
                 </TouchableOpacity>
               </View>
-              {recentSearches.map((search, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.recentItem}
-                  onPress={() => handleSearch(search)}
-                >
-                  <Text style={styles.recentIcon}>⏱️</Text>
-                  <Text style={[styles.recentText, { color: Colors.light.text }]}>{search}</Text>
-                  <Text style={styles.recentArrow}>›</Text>
-                </TouchableOpacity>
-              ))}
+              <View style={st.recentCard}>
+                {recent.map((r, i) => (
+                  <View key={i}>
+                    <TouchableOpacity style={st.recentRow} onPress={() => search(r)} activeOpacity={0.7}>
+                      <View style={st.recentIconBox}><Text style={st.recentIcon}>⏱</Text></View>
+                      <Text style={st.recentText}>{r}</Text>
+                      <Text style={st.recentArrow}>›</Text>
+                    </TouchableOpacity>
+                    {i < recent.length - 1 && <View style={st.recentDivider} />}
+                  </View>
+                ))}
+              </View>
             </View>
           )}
 
-          {/* Browse by Category */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>
-              Browse by Category
-            </Text>
-            <View style={styles.categoriesGrid}>
-              {SEARCH_CATEGORIES.map((category) => (
-                <TouchableOpacity key={category.id} style={styles.categoryBox}>
-                  <Text style={styles.categoryIcon}>{category.icon}</Text>
-                  <Text style={[styles.categoryName, { color: Colors.light.text }]}>
-                    {category.name}
-                  </Text>
+          {/* Categories */}
+          <View style={st.section}>
+            <Text style={st.sectionTitle}>Browse by Category</Text>
+            <View style={st.catsGrid}>
+              {CATS.map(c => (
+                <TouchableOpacity
+                  key={c.id}
+                  style={[st.catBox, { backgroundColor: c.color }]}
+                  onPress={() => router.push(`/(tabs)/category?name=${c.name}`)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={st.catIcon}>{c.icon}</Text>
+                  <Text style={st.catName}>{c.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
-
-          <View style={styles.bottomSpacing} />
+          <View style={{ height: 24 }} />
         </ScrollView>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  topBar: { height: 12, backgroundColor: '#ffffff' },
-  scrollView: { flex: 1 },
-  searchBarContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+const st = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
+
+  searchWrap: {
+    paddingHorizontal: 20, paddingVertical: 12,
+    backgroundColor: C.bg,
   },
-  searchBarWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 24,
-    paddingHorizontal: 12,
-    height: 44,
-    gap: 8,
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: C.surface, borderRadius: 14,
+    paddingHorizontal: 14, height: 50,
+    borderWidth: 1.5, borderColor: C.border,
+    ...shadow('sm'),
   },
-  searchIcon: { fontSize: 20 },
-  searchInput: { flex: 1, fontSize: 14, color: '#333', padding: 0 },
-  clearIcon: { fontSize: 18, color: '#999' },
-  section: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+  searchIcon: { fontSize: 18 },
+  searchInput: { flex: 1, fontSize: 14, color: C.ink, padding: 0, fontWeight: '500' },
+  clearBtn: {
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: C.surfaceAlt, justifyContent: 'center', alignItems: 'center',
   },
-  sectionTitle: { fontSize: 14, fontWeight: '700', marginBottom: 12 },
-  suggestionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  suggestionChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F8FF',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#E0E8FF',
+  clearIcon: { fontSize: 10, color: C.inkSub, fontWeight: '700' },
+
+  resultsLabel: { fontSize: 12, color: C.inkMuted, paddingHorizontal: 20, marginBottom: 12, marginTop: 4 },
+  resultGrid: { gap: 12, justifyContent: 'space-between', marginBottom: 12 },
+  resultCard: {
+    width: CARD_W, backgroundColor: C.surface, borderRadius: 16,
+    overflow: 'hidden', borderWidth: 1, borderColor: C.border,
+    ...shadow('md'),
   },
-  suggestionIcon: { fontSize: 16 },
-  suggestionText: { fontSize: 12, color: '#333', fontWeight: '500' },
-  recentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  resultImgBox: { backgroundColor: C.surfaceAlt },
+  resultImg: { width: '100%', height: 130 },
+  resultBody: { padding: 10 },
+  resultBrand: { fontSize: 9, color: C.inkMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 3 },
+  resultName: { fontSize: 13, fontWeight: '600', color: C.ink, marginBottom: 6, lineHeight: 18 },
+  resultPriceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  resultPrice: { fontSize: 14, fontWeight: '800', color: C.blue },
+  resultRating: { fontSize: 11, color: '#F59E0B', fontWeight: '600' },
+
+  section: { paddingHorizontal: 20, paddingVertical: 16 },
+  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: C.ink, marginBottom: 14 },
+  clearAll: { fontSize: 12, color: C.error, fontWeight: '600' },
+
+  pillsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)',
   },
-  clearText: { fontSize: 12, color: '#FF6B35', fontWeight: '700' },
-  recentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+  pillIcon: { fontSize: 15 },
+  pillText: { fontSize: 13, color: C.inkSub, fontWeight: '600' },
+
+  recentCard: {
+    backgroundColor: C.surface, borderRadius: 16,
+    borderWidth: 1, borderColor: C.border, overflow: 'hidden',
+    ...shadow('sm'),
   },
-  recentIcon: { fontSize: 16 },
-  recentText: { flex: 1, fontSize: 13, fontWeight: '500' },
-  recentArrow: { fontSize: 16, color: '#999' },
-  categoriesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  categoryBox: {
-    width: '31%',
-    backgroundColor: '#F9F9F9',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
+  recentRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
+  recentIconBox: { width: 32, height: 32, borderRadius: 10, backgroundColor: C.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
+  recentIcon: { fontSize: 14 },
+  recentText: { flex: 1, fontSize: 14, color: C.inkSub, fontWeight: '500' },
+  recentArrow: { fontSize: 18, color: C.inkLight },
+  recentDivider: { height: 1, backgroundColor: C.borderLight, marginLeft: 58 },
+
+  catsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  catBox: {
+    width: (W - 40 - 20) / 3, borderRadius: 14,
+    paddingVertical: 16, alignItems: 'center', gap: 6,
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)',
   },
-  categoryIcon: { fontSize: 28 },
-  categoryName: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
-  bottomSpacing: { height: 20 },
-  resultsContainer: { flex: 1, paddingHorizontal: 8, paddingTop: 12 },
-  resultsCountText: {
-    fontSize: 14,
-    fontWeight: '600',
-    paddingHorizontal: 8,
-    marginBottom: 12,
-  },
-  searchResultCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    margin: 8,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  resultImage: { width: '100%', height: 140, backgroundColor: '#F5F5F5' },
-  resultInfo: { padding: 10 },
-  resultBrand: { fontSize: 10, color: '#2196F3', fontWeight: '700', marginBottom: 4 },
-  resultName: { fontSize: 13, fontWeight: '600', marginBottom: 6, height: 32 },
-  resultPriceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  resultPrice: { fontSize: 14, fontWeight: '700', color: '#2196F3' },
-  resultRating: { fontSize: 11, color: '#666' },
-  resultAddButtonContainer: { marginTop: 8 },
-  resultGrid: { justifyContent: 'space-between' },
-  resultContent: { paddingBottom: 20 },
-  noResultsContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 80,
-  },
-  noResultsEmoji: { fontSize: 60, marginBottom: 16 },
-  noResultsText: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
-  noResultsSubtext: { fontSize: 14, color: '#999', textAlign: 'center' },
+  catIcon: { fontSize: 26 },
+  catName: { fontSize: 11, fontWeight: '600', color: C.inkSub, textAlign: 'center' },
+
+  empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40 },
+  emptyIconBox: { width: 80, height: 80, borderRadius: 40, backgroundColor: C.blueLight, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  emptyIcon: { fontSize: 36 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: C.ink, marginBottom: 8 },
+  emptySub: { fontSize: 13, color: C.inkMuted, textAlign: 'center', lineHeight: 20 },
 });

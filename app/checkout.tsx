@@ -1,19 +1,23 @@
-import { Colors } from '@/constants/theme';
+import { C, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { createOrder, PaymentMethod, ShippingAddress } from '@/services/ordersService';
 import { createRazorpayOrder, logPaymentFailure } from '@/services/razorpayService';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAddresses } from '@/hooks/useFirestore';
 import {
     ActivityIndicator,
     Alert,
+    Platform,
     ScrollView,
+    StatusBar,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type AddressType = 'home' | 'work';
 type PaymentMethodType = 'upi' | 'cards' | 'cod' | 'netbanking';
@@ -35,22 +39,7 @@ interface PaymentOption {
   icon: string;
 }
 
-const MOCK_ADDRESSES: Address[] = [
-  {
-    id: '1',
-    type: 'home',
-    name: 'Alex Johnson',
-    address: 'Apt 4B, Silver Oak Residency, 5th Main, Sector 4, HSR Layout, Bangalore - 560102',
-    phone: '+91 98765 43210',
-  },
-  {
-    id: '2',
-    type: 'work',
-    name: 'Alex Johnson',
-    address: 'Onway Tech Solutions, 2nd Floor, Delta Tower, Koramangala, Bangalore - 560034',
-    phone: '+91 98765 43210',
-  },
-];
+
 
 const PAYMENT_OPTIONS: PaymentOption[] = [
   {
@@ -97,29 +86,20 @@ const AddressCard = ({
   <TouchableOpacity
     style={[styles.addressCard, isSelected && styles.addressCardSelected]}
     onPress={onSelect}
+    activeOpacity={0.8}
   >
-    <View style={styles.addressIconContainer}>
-      <Text style={styles.addressIcon}>📍</Text>
-    </View>
     <View style={styles.addressContent}>
       <View style={styles.addressHeader}>
-        <Text style={[styles.addressName, { color: Colors.light.text }]}>
-          {address.name}
-        </Text>
-        {address.type === 'home' && (
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeBadgeText}>Home</Text>
-          </View>
-        )}
-        {address.type === 'work' && (
-          <Text style={styles.workLabel}>Work</Text>
-        )}
+        <Text style={styles.addressName}>{address.name}</Text>
+        <View style={[styles.typeBadge, address.type === 'work' && styles.typeBadgeWork]}>
+          <Text style={styles.typeBadgeText}>{address.type === 'home' ? 'Home' : 'Work'}</Text>
+        </View>
       </View>
       <Text style={styles.addressText}>{address.address}</Text>
       <Text style={styles.phoneText}>{address.phone}</Text>
     </View>
     <View style={[styles.selectIcon, isSelected && styles.selectIconActive]}>
-      <Text style={styles.selectIconText}>{isSelected ? '✓' : ''}</Text>
+      {isSelected && <Text style={styles.selectIconText}>✓</Text>}
     </View>
   </TouchableOpacity>
 );
@@ -136,15 +116,12 @@ const PaymentOptionCard = ({
   <TouchableOpacity
     style={[styles.paymentCard, isSelected && styles.paymentCardSelected]}
     onPress={onSelect}
+    activeOpacity={0.8}
   >
-    <View style={styles.paymentContent}>
-      <Text style={styles.paymentIcon}>{option.icon}</Text>
-      <View style={styles.paymentTextContainer}>
-        <Text style={[styles.paymentTitle, { color: Colors.light.text }]}>
-          {option.title}
-        </Text>
-        <Text style={styles.paymentDescription}>{option.description}</Text>
-      </View>
+    <Text style={styles.paymentIcon}>{option.icon}</Text>
+    <View style={styles.paymentTextContainer}>
+      <Text style={styles.paymentTitle}>{option.title}</Text>
+      <Text style={styles.paymentDescription}>{option.description}</Text>
     </View>
     {option.badge && (
       <View style={styles.paymentBadge}>
@@ -158,8 +135,21 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const { cartItems, clearCart } = useCart();
   const { user } = useAuth();
+  const { addresses, loading: addressesLoading } = useAddresses();
   const [currentStep, setCurrentStep] = useState(1); // 1: Address, 2: Payment, 3: Review
-  const [selectedAddress, setSelectedAddress] = useState<string>('1');
+  const [selectedAddress, setSelectedAddress] = useState<string>('');
+
+  // Automatically select default address or first address when loaded
+  useEffect(() => {
+    if (addresses && addresses.length > 0) {
+      if (!selectedAddress || !addresses.some((a) => a.id === selectedAddress)) {
+        const defaultAddr = addresses.find((a) => a.isDefault);
+        setSelectedAddress(defaultAddr ? defaultAddr.id : addresses[0].id);
+      }
+    } else {
+      setSelectedAddress('');
+    }
+  }, [addresses, selectedAddress]);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethodType>('upi');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
@@ -183,7 +173,7 @@ export default function CheckoutScreen() {
     setIsPlacingOrder(true);
     try {
       // Get selected address
-      const selectedAddressData = MOCK_ADDRESSES.find((a) => a.id === selectedAddress);
+      const selectedAddressData = addresses.find((a) => a.id === selectedAddress);
       if (!selectedAddressData) {
         throw new Error('Please select a valid address');
       }
@@ -294,83 +284,59 @@ export default function CheckoutScreen() {
 
   if (!user) {
     return (
-      <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
-        <Text style={{ color: Colors.light.text, textAlign: 'center', marginTop: 50 }}>
-          Please login to checkout
-        </Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loginPrompt}>
+          <Text style={styles.loginPromptText}>Please login to checkout</Text>
+          <TouchableOpacity style={styles.loginPromptBtn} onPress={() => router.push('/login')}>
+            <Text style={styles.loginPromptBtnText}>Login</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backButton}>{'<'}</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={styles.backBtnText}>←</Text>
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: Colors.light.text }]}>Checkout</Text>
-          <View style={{ width: 24 }} />
+          <Text style={styles.headerTitle}>Checkout</Text>
+          <View style={{ width: 38 }} />
         </View>
 
         {/* Progress Indicator */}
         <View style={styles.progressContainer}>
           <View style={styles.progressRow}>
-            {/* Step 1: Address */}
-            <View style={styles.progressStep}>
-              <View
-                style={[
-                  styles.progressCircle,
-                  currentStep >= 1 && styles.progressCircleActive,
-                ]}
-              >
-                <Text style={styles.progressText}>1</Text>
+            {[
+              { step: 1, label: 'ADDRESS' },
+              { step: 2, label: 'PAYMENT' },
+              { step: 3, label: 'REVIEW' },
+            ].map((item, index) => (
+              <View key={item.step} style={styles.progressItem}>
+                <View style={styles.progressStepWrapper}>
+                  {index > 0 && (
+                    <View style={[styles.progressLine, currentStep >= item.step && styles.progressLineActive]} />
+                  )}
+                  <View style={[styles.progressCircle, currentStep >= item.step && styles.progressCircleActive]}>
+                    {currentStep > item.step ? (
+                      <Text style={styles.progressCheckText}>✓</Text>
+                    ) : (
+                      <Text style={styles.progressText}>{item.step}</Text>
+                    )}
+                  </View>
+                  {index < 2 && (
+                    <View style={[styles.progressLine, currentStep > item.step && styles.progressLineActive]} />
+                  )}
+                </View>
+                <Text style={[styles.progressLabel, currentStep >= item.step && styles.progressLabelActive]}>
+                  {item.label}
+                </Text>
               </View>
-              <Text style={styles.progressLabel}>ADDRESS</Text>
-            </View>
-
-            {/* Connector Line 1 */}
-            <View
-              style={[
-                styles.progressLine,
-                currentStep >= 2 && styles.progressLineActive,
-              ]}
-            />
-
-            {/* Step 2: Payment */}
-            <View style={styles.progressStep}>
-              <View
-                style={[
-                  styles.progressCircle,
-                  currentStep >= 2 && styles.progressCircleActive,
-                ]}
-              >
-                <Text style={styles.progressText}>2</Text>
-              </View>
-              <Text style={styles.progressLabel}>PAYMENT</Text>
-            </View>
-
-            {/* Connector Line 2 */}
-            <View
-              style={[
-                styles.progressLine,
-                currentStep >= 3 && styles.progressLineActive,
-              ]}
-            />
-
-            {/* Step 3: Review */}
-            <View style={styles.progressStep}>
-              <View
-                style={[
-                  styles.progressCircle,
-                  currentStep >= 3 && styles.progressCircleActive,
-                ]}
-              >
-                <Text style={styles.progressText}>3</Text>
-              </View>
-              <Text style={styles.progressLabel}>REVIEW</Text>
-            </View>
+            ))}
           </View>
         </View>
 
@@ -380,22 +346,34 @@ export default function CheckoutScreen() {
             {/* Delivery Address */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>
-                  Delivery Address
-                </Text>
-                <TouchableOpacity>
-                  <Text style={styles.addNewButton}>+ Add New</Text>
+                <Text style={styles.sectionTitle}>Delivery Address</Text>
+                <TouchableOpacity style={styles.addNewBtn} onPress={() => router.push('/saved-addresses')}>
+                  <Text style={styles.addNewBtnText}>+ Add New</Text>
                 </TouchableOpacity>
               </View>
 
-              {MOCK_ADDRESSES.map((address) => (
-                <AddressCard
-                  key={address.id}
-                  address={address}
-                  isSelected={selectedAddress === address.id}
-                  onSelect={() => setSelectedAddress(address.id)}
-                />
-              ))}
+              {addressesLoading ? (
+                <ActivityIndicator size="small" color={C.blue} style={{ marginVertical: 20 }} />
+              ) : addresses.length > 0 ? (
+                addresses.map((address) => (
+                  <AddressCard
+                    key={address.id}
+                    address={address}
+                    isSelected={selectedAddress === address.id}
+                    onSelect={() => setSelectedAddress(address.id)}
+                  />
+                ))
+              ) : (
+                <View style={styles.emptyAddressContainer}>
+                  <Text style={styles.emptyAddressText}>No saved addresses found.</Text>
+                  <TouchableOpacity
+                    style={styles.emptyAddressBtn}
+                    onPress={() => router.push('/saved-addresses')}
+                  >
+                    <Text style={styles.emptyAddressBtnText}>Add Address</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
         )}
@@ -404,9 +382,7 @@ export default function CheckoutScreen() {
           <View style={styles.stepContent}>
             {/* Payment Method */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>
-                Payment Method
-              </Text>
+              <Text style={styles.sectionTitle}>Payment Method</Text>
 
               <View style={styles.paymentGrid}>
                 {PAYMENT_OPTIONS.map((option) => (
@@ -424,21 +400,17 @@ export default function CheckoutScreen() {
 
         {currentStep === 3 && (
           <View style={styles.stepContent}>
-            {/* Review content */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>
-                Order Review
-              </Text>
+              <Text style={styles.sectionTitle}>Order Review</Text>
               <View style={styles.reviewBox}>
-                <Text style={styles.reviewLabel}>Items in Cart:</Text>
-                <Text style={[styles.reviewValue, { color: Colors.light.text }]}>
-                  {cartItems.length} items
-                </Text>
-                <Text style={styles.reviewLabel} style={{ marginTop: 12 }}>
-                  Delivery Address:
-                </Text>
-                <Text style={[styles.reviewValue, { color: Colors.light.text }]}>
-                  {MOCK_ADDRESSES.find((a) => a.id === selectedAddress)?.address}
+                <View style={styles.reviewRow}>
+                  <Text style={styles.reviewLabel}>Items in Cart</Text>
+                  <Text style={styles.reviewValue}>{cartItems.length} items</Text>
+                </View>
+                <View style={styles.reviewDivider} />
+                <Text style={styles.reviewLabel}>Delivery Address</Text>
+                <Text style={styles.reviewAddressText}>
+                  {addresses.find((a) => a.id === selectedAddress)?.address || 'No address selected'}
                 </Text>
               </View>
             </View>
@@ -446,45 +418,35 @@ export default function CheckoutScreen() {
         )}
 
         {/* Order Summary */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: Colors.light.text }]}>
-            Order Summary
-          </Text>
+        <View style={styles.summaryCard}>
+          <Text style={styles.sectionTitle}>Order Summary</Text>
 
           <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: Colors.light.text }]}>
+            <Text style={styles.summaryLabel}>
               Items Total ({cartItems.length} {cartItems.length === 1 ? 'item' : 'items'})
             </Text>
-            <Text style={[styles.summaryValue, { color: Colors.light.text }]}>
-              ₹{subtotal.toFixed(2)}
-            </Text>
+            <Text style={styles.summaryValue}>₹{subtotal.toFixed(2)}</Text>
           </View>
 
           <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: Colors.light.text }]}>
-              Delivery Fee
-            </Text>
-            <View style={styles.deliveryFeeContainer}>
+            <Text style={styles.summaryLabel}>Delivery Fee</Text>
+            <View style={styles.deliveryFeeRow}>
               <Text style={styles.deliveryFeeStrike}>₹40.00</Text>
-              <Text style={styles.deliveryFeeFree}>FREE</Text>
+              <View style={styles.freePill}>
+                <Text style={styles.freePillText}>FREE</Text>
+              </View>
             </View>
           </View>
 
           <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: Colors.light.text }]}>
-              Taxes & Charges
-            </Text>
-            <Text style={[styles.summaryValue, { color: Colors.light.text }]}>
-              ₹{tax.toFixed(2)}
-            </Text>
+            <Text style={styles.summaryLabel}>Taxes & Charges</Text>
+            <Text style={styles.summaryValue}>₹{tax.toFixed(2)}</Text>
           </View>
 
-          <View style={styles.divider} />
+          <View style={styles.summaryDivider} />
 
           <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabelBold, { color: Colors.light.text }]}>
-              To Pay
-            </Text>
+            <Text style={styles.summaryLabelBold}>Total Payable</Text>
             <Text style={styles.summaryValueBold}>₹{totalAmount.toFixed(2)}</Text>
           </View>
         </View>
@@ -503,12 +465,10 @@ export default function CheckoutScreen() {
         {/* Delivery Time */}
         <View style={styles.deliveryTimeBox}>
           <View style={styles.deliveryTimeLeft}>
-            <Text style={styles.deliveryTimeIcon}>⏱️</Text>
+            <Text style={styles.deliveryTimeIcon}>⚡</Text>
             <View>
               <Text style={styles.deliveryTimeLabel}>EXPRESS DELIVERY</Text>
-              <Text style={[styles.deliveryTimeText, { color: Colors.light.text }]}>
-                Arriving in 10-15 mins
-              </Text>
+              <Text style={styles.deliveryTimeText}>Arriving in 10–15 mins</Text>
             </View>
           </View>
           <View style={styles.deliveryTimeRight}>
@@ -517,495 +477,239 @@ export default function CheckoutScreen() {
           </View>
         </View>
 
-        {/* Bottom Spacing */}
-        <View style={styles.bottomSpacing} />
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Action Container */}
-      <View style={styles.actionContainer}>
+      {/* Action Bar */}
+      <View style={styles.actionBar}>
         <View style={styles.buttonRow}>
           {currentStep > 1 && (
             <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
+              style={styles.backStepBtn}
               onPress={() => setCurrentStep(currentStep - 1)}
+              activeOpacity={0.85}
             >
-              <Text style={styles.secondaryButtonText}>Back</Text>
+              <Text style={styles.backStepBtnText}>← Back</Text>
             </TouchableOpacity>
           )}
           {currentStep < 3 ? (
             <TouchableOpacity
-              style={[
-                styles.button,
-                styles.primaryButton,
-                currentStep > 1 && { flex: 1, marginLeft: 8 },
-              ]}
-              onPress={() => setCurrentStep(currentStep + 1)}
+              style={[styles.nextBtn, currentStep > 1 && { flex: 1 }]}
+              onPress={() => {
+                if (currentStep === 1 && !selectedAddress) {
+                  Alert.alert('Error', 'Please select or add a delivery address to continue.');
+                  return;
+                }
+                setCurrentStep(currentStep + 1);
+              }}
+              activeOpacity={0.88}
             >
-              <Text style={styles.primaryButtonText}>Next</Text>
+              <Text style={styles.nextBtnText}>Continue →</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[
-                styles.button,
-                styles.placeOrderButton,
-                { flex: currentStep > 1 ? 1 : undefined, marginLeft: currentStep > 1 ? 8 : 0 },
-              ]}
+              style={[styles.placeOrderBtn, currentStep > 1 && { flex: 1 }]}
               onPress={handlePlaceOrder}
               disabled={isPlacingOrder}
+              activeOpacity={0.88}
             >
               {isPlacingOrder ? (
-                <ActivityIndicator color="white" />
+                <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <>
-                  <Text style={styles.placeOrderText}>Place Order</Text>
-                  <Text style={styles.placeOrderArrow}> →</Text>
-                </>
+                <Text style={styles.placeOrderBtnText}>Place Order →</Text>
               )}
             </TouchableOpacity>
           )}
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: C.bg },
+  scrollView: { flex: 1 },
+
+  emptyAddressContainer: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.surface,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    borderStyle: 'dashed',
+    marginVertical: 10,
   },
-  scrollView: {
-    flex: 1,
+  emptyAddressText: {
+    fontSize: 14,
+    color: C.inkSub,
+    marginBottom: 12,
   },
+  emptyAddressBtn: {
+    backgroundColor: C.blue,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  emptyAddressBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  loginPrompt: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  loginPromptText: { fontSize: 15, color: C.inkSub, marginBottom: 20, textAlign: 'center' },
+  loginPromptBtn: { backgroundColor: C.blue, borderRadius: 14, paddingHorizontal: 32, paddingVertical: 14, ...shadow('blue') },
+  loginPromptBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 14, backgroundColor: C.bg,
   },
-  backButton: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.light.text,
+  backBtn: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
+    justifyContent: 'center', alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1a1a2e',
-  },
+  backBtnText: { fontSize: 18, color: C.ink },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: C.ink },
+
   progressContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingHorizontal: 32, paddingVertical: 20,
+    backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.borderLight,
   },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  progressItem: { alignItems: 'center', flex: 1 },
+  progressStepWrapper: { flexDirection: 'row', alignItems: 'center', width: '100%', justifyContent: 'center' },
+  progressCircle: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.surfaceAlt, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: C.border },
+  progressCircleActive: { backgroundColor: C.blue, borderColor: C.blue },
+  progressText: { fontSize: 13, fontWeight: '700', color: C.inkMuted },
+  progressCheckText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  progressLabel: { fontSize: 9, fontWeight: '700', color: C.inkMuted, marginTop: 6, letterSpacing: 0.6, textTransform: 'uppercase' },
+  progressLabelActive: { color: C.blue },
+  progressLine: { flex: 1, height: 2, backgroundColor: C.border, marginHorizontal: 4 },
+  progressLineActive: { backgroundColor: C.blue },
+
+  stepContent: { paddingHorizontal: 20, paddingTop: 20 },
+  section: { marginBottom: 20, paddingHorizontal: 20 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: C.ink, marginBottom: 14 },
+  addNewBtn: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
+    backgroundColor: C.blueLight, borderWidth: 1, borderColor: C.blueMid,
   },
-  progressStep: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  progressCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  progressCircleActive: {
-    backgroundColor: '#0C63E4',
-  },
-  progressText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: 'white',
-  },
-  progressLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#999',
-    textAlign: 'center',
-  },
-  progressLine: {
-    flex: 1,
-    height: 2,
-    backgroundColor: '#e0e0e0',
-    marginHorizontal: 8,
-    marginTop: 22,
-  },
-  progressLineActive: {
-    backgroundColor: '#0C63E4',
-  },
-  stepContent: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    marginBottom: 12,
-    color: '#1a1a2e',
-  },
-  addNewButton: {
-    fontSize: 12,
-    color: '#0C63E4',
-    fontWeight: '800',
-  },
+  addNewBtnText: { fontSize: 12, color: C.blue, fontWeight: '700' },
+
   addressCard: {
-    flexDirection: 'row',
-    borderWidth: 2,
-    borderColor: '#f0f0f0',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
-    backgroundColor: 'white',
-    alignItems: 'flex-start',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.03,
-    shadowRadius: 1,
+    flexDirection: 'row', alignItems: 'flex-start',
+    borderWidth: 1.5, borderColor: C.border, borderRadius: 16,
+    padding: 14, marginBottom: 10, backgroundColor: C.surface,
+    ...shadow('sm'),
   },
-  addressCardSelected: {
-    borderColor: '#0C63E4',
-    backgroundColor: '#f0f8ff',
-  },
-  addressIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#0C63E4',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    elevation: 2,
-    shadowColor: '#0C63E4',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-  },
-  addressIcon: {
-    fontSize: 20,
-    color: 'white',
-  },
-  addressContent: {
-    flex: 1,
-  },
-  addressHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-    gap: 8,
-  },
-  addressName: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  typeBadge: {
-    backgroundColor: '#0C63E4',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  typeBadgeText: {
-    fontSize: 9,
-    color: 'white',
-    fontWeight: '800',
-  },
-  workLabel: {
-    fontSize: 10,
-    color: '#999',
-    fontWeight: '600',
-  },
-  addressText: {
-    fontSize: 11,
-    color: '#666',
-    marginBottom: 4,
-    lineHeight: 16,
-  },
-  phoneText: {
-    fontSize: 11,
-    color: '#999',
-    fontWeight: '500',
-  },
-  selectIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 12,
-  },
-  selectIconActive: {
-    borderColor: '#0C63E4',
-    backgroundColor: '#0C63E4',
-  },
-  selectIconText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: 'white',
-  },
-  paymentGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 12,
-  },
+  addressCardSelected: { borderColor: C.blue, backgroundColor: C.blueLight },
+  addressContent: { flex: 1 },
+  addressHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 5 },
+  addressName: { fontSize: 13, fontWeight: '700', color: C.ink },
+  typeBadge: { backgroundColor: C.surfaceAlt, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  typeBadgeWork: { backgroundColor: C.tealLight },
+  typeBadgeText: { fontSize: 9, color: C.inkSub, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
+  addressText: { fontSize: 12, color: C.inkSub, marginBottom: 4, lineHeight: 17 },
+  phoneText: { fontSize: 11, color: C.inkMuted },
+  selectIcon: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: C.border, justifyContent: 'center', alignItems: 'center', marginLeft: 10, marginTop: 2 },
+  selectIconActive: { borderColor: C.blue, backgroundColor: C.blue },
+  selectIconText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+
+  paymentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
   paymentCard: {
-    width: '48%',
-    borderWidth: 2,
-    borderColor: '#f0f0f0',
-    borderRadius: 12,
-    padding: 12,
-    backgroundColor: 'white',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.03,
-    shadowRadius: 1,
+    width: '47%', flexDirection: 'row', alignItems: 'center', gap: 10,
+    borderWidth: 1.5, borderColor: C.border, borderRadius: 14,
+    padding: 14, backgroundColor: C.surface,
+    ...shadow('sm'),
   },
-  paymentCardSelected: {
-    borderColor: '#0C63E4',
-    backgroundColor: '#f0f8ff',
+  paymentCardSelected: { borderColor: C.blue, backgroundColor: C.blueLight },
+  paymentIcon: { fontSize: 24 },
+  paymentTextContainer: { flex: 1 },
+  paymentTitle: { fontSize: 13, fontWeight: '700', color: C.ink, marginBottom: 2 },
+  paymentDescription: { fontSize: 10, color: C.inkMuted },
+  paymentBadge: { backgroundColor: C.successBg, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  paymentBadgeText: { fontSize: 9, color: C.success, fontWeight: '800' },
+
+  reviewBox: { backgroundColor: C.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: C.border, ...shadow('sm') },
+  reviewRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  reviewLabel: { fontSize: 12, color: C.inkMuted, marginBottom: 4 },
+  reviewValue: { fontSize: 13, fontWeight: '700', color: C.ink },
+  reviewDivider: { height: 1, backgroundColor: C.borderLight, marginBottom: 10 },
+  reviewAddressText: { fontSize: 13, color: C.inkSub, lineHeight: 20 },
+
+  summaryCard: {
+    marginHorizontal: 20, marginBottom: 14,
+    backgroundColor: C.surface, borderRadius: 16, padding: 16,
+    borderWidth: 1, borderColor: C.border,
+    ...shadow('sm'),
   },
-  paymentContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 8,
-  },
-  paymentIcon: {
-    fontSize: 28,
-  },
-  paymentTextContainer: {
-    flex: 1,
-  },
-  paymentTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  paymentDescription: {
-    fontSize: 9,
-    color: '#999',
-    fontWeight: '500',
-  },
-  paymentBadge: {
-    backgroundColor: '#f0f8ff',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#e0e8ff',
-  },
-  paymentBadgeText: {
-    fontSize: 10,
-    color: '#0C63E4',
-    fontWeight: '800',
-  },
-  reviewBox: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  reviewLabel: {
-    fontSize: 11,
-    color: '#999',
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  reviewValue: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  reviewText: {
-    fontSize: 12,
-    color: '#999',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  summaryLabelBold: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  summaryValue: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  summaryValueBold: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2196F3',
-  },
-  deliveryFeeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  deliveryFeeStrike: {
-    fontSize: 11,
-    color: '#999',
-    textDecorationLine: 'line-through',
-  },
-  deliveryFeeFree: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#4CAF50',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 12,
-  },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  summaryLabel: { fontSize: 13, color: C.inkSub },
+  summaryLabelBold: { fontSize: 15, fontWeight: '700', color: C.ink },
+  summaryValue: { fontSize: 13, color: C.ink, fontWeight: '500' },
+  summaryValueBold: { fontSize: 22, fontWeight: '800', color: C.blue },
+  deliveryFeeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  deliveryFeeStrike: { fontSize: 12, color: C.inkMuted, textDecorationLine: 'line-through' },
+  freePill: { backgroundColor: C.successBg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  freePillText: { fontSize: 10, color: C.success, fontWeight: '800' },
+  summaryDivider: { height: 1, backgroundColor: C.borderLight, marginBottom: 12 },
+
   securityBox: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: '#E3F2FD',
-    borderRadius: 12,
-    padding: 12,
-    gap: 12,
-    alignItems: 'flex-start',
+    flexDirection: 'row', marginHorizontal: 20, marginBottom: 12,
+    backgroundColor: C.blueLight, borderRadius: 14, padding: 14, gap: 12,
+    alignItems: 'flex-start', borderWidth: 1, borderColor: C.blueMid,
   },
-  securityIcon: {
-    fontSize: 20,
-  },
-  securityContent: {
-    flex: 1,
-  },
-  securityTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#2196F3',
-    marginBottom: 2,
-  },
-  securityText: {
-    fontSize: 10,
-    color: '#2196F3',
-    lineHeight: 14,
-  },
+  securityIcon: { fontSize: 20 },
+  securityContent: { flex: 1 },
+  securityTitle: { fontSize: 13, fontWeight: '700', color: C.blue, marginBottom: 3 },
+  securityText: { fontSize: 11, color: C.inkSub, lineHeight: 16 },
+
   deliveryTimeBox: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginHorizontal: 20, marginBottom: 16,
+    backgroundColor: C.surface, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: C.border,
   },
-  deliveryTimeLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  deliveryTimeLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  deliveryTimeIcon: { fontSize: 22 },
+  deliveryTimeLabel: { fontSize: 9, color: C.inkMuted, fontWeight: '700', marginBottom: 3, letterSpacing: 0.5, textTransform: 'uppercase' },
+  deliveryTimeText: { fontSize: 13, fontWeight: '700', color: C.ink },
+  deliveryTimeRight: { alignItems: 'flex-end' },
+  deliveryTimeRightLabel: { fontSize: 9, color: C.inkMuted, fontWeight: '700', marginBottom: 3, letterSpacing: 0.5, textTransform: 'uppercase' },
+  deliveryTimeAmount: { fontSize: 17, fontWeight: '800', color: C.blue },
+
+  actionBar: {
+    paddingHorizontal: 20, paddingVertical: 12,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+    backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.border,
+    ...(Platform.OS === 'ios'
+      ? { shadowColor: '#64748B', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.08, shadowRadius: 12 }
+      : { elevation: 8 }),
   },
-  deliveryTimeIcon: {
-    fontSize: 20,
+  buttonRow: { flexDirection: 'row', gap: 10 },
+  backStepBtn: {
+    borderWidth: 1.5, borderColor: C.border, borderRadius: 14,
+    paddingVertical: 14, paddingHorizontal: 18,
+    justifyContent: 'center', alignItems: 'center',
   },
-  deliveryTimeLabel: {
-    fontSize: 9,
-    color: '#999',
-    fontWeight: '700',
-    marginBottom: 2,
+  backStepBtnText: { color: C.ink, fontSize: 14, fontWeight: '600' },
+  nextBtn: {
+    flex: 1, backgroundColor: C.blue, borderRadius: 14,
+    paddingVertical: 14, justifyContent: 'center', alignItems: 'center',
+    ...shadow('blue'),
   },
-  deliveryTimeText: {
-    fontSize: 12,
-    fontWeight: '700',
+  nextBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  placeOrderBtn: {
+    flex: 1, backgroundColor: C.success, borderRadius: 14,
+    paddingVertical: 14, justifyContent: 'center', alignItems: 'center',
+    ...(Platform.OS === 'ios'
+      ? { shadowColor: C.success, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 }
+      : { elevation: 6 }),
   },
-  deliveryTimeRight: {
-    alignItems: 'flex-end',
-  },
-  deliveryTimeRightLabel: {
-    fontSize: 9,
-    color: '#999',
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  deliveryTimeAmount: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#2196F3',
-  },
-  bottomSpacing: {
-    height: 100,
-  },
-  actionContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  button: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryButton: {
-    backgroundColor: '#2196F3',
-    flex: 1,
-  },
-  primaryButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  secondaryButton: {
-    borderWidth: 2,
-    borderColor: '#2196F3',
-    backgroundColor: 'transparent',
-  },
-  secondaryButtonText: {
-    color: '#2196F3',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  placeOrderButton: {
-    backgroundColor: '#2196F3',
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  placeOrderText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  placeOrderArrow: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  placeOrderBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });
