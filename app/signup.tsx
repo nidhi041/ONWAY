@@ -1,22 +1,16 @@
-import { Colors } from '@/constants/theme';
+import { C, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
 import * as Google from 'expo-auth-session/providers/google';
+import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { useCallback, useEffect, useState } from 'react';
+import {
+    ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+    ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 WebBrowser.maybeCompleteAuthSession();
-import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from 'react-native';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -25,571 +19,246 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [showCpw, setShowCpw] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Google Auth Setup
   const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: '40420149902-rojg2b43llmr0k9d6g7s5qcstrkrquld.apps.googleusercontent.com',
-    clientId: '40420149902-rojg2b43llmr0k9d6g7s5qcstrkrquld.apps.googleusercontent.com',
+    webClientId: '40420149902-40c5dv01ohpul08gknr12ef6ftl2cu2p.apps.googleusercontent.com',
+    clientId: '40420149902-40c5dv01ohpul08gknr12ef6ftl2cu2p.apps.googleusercontent.com',
   });
+
+  const handleGoogleSignup = useCallback(async (idToken: string) => {
+    setLoading(true);
+    try { await loginWithGoogle(idToken); router.replace('/(tabs)/profile'); }
+    catch (e) { Alert.alert('Error', e instanceof Error ? e.message : 'Google signup failed'); }
+    finally { setLoading(false); }
+  }, [loginWithGoogle, router]);
 
   useEffect(() => {
     if (response?.type === 'success') {
       const { id_token } = response.params;
-      if (id_token) {
-        handleGoogleLogin(id_token);
-      }
+      if (id_token) handleGoogleSignup(id_token);
     }
-  }, [response]);
+  }, [response, handleGoogleSignup]);
 
-  const handleGoogleLogin = async (idToken: string) => {
-    setLoading(true);
-    try {
-      await loginWithGoogle(idToken);
-      router.replace('/(tabs)/profile');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Google Signup failed.';
-      Alert.alert('Signup Failed', errorMessage);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (request?.redirectUri) {
+      console.log('--- GOOGLE REDIRECT URI FOR SIGNUP ---');
+      console.log(request.redirectUri);
+      console.log('-------------------------------------');
     }
-  };
+  }, [request]);
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  const clr = (f: string) => setErrors(e => ({ ...e, [f]: '' }));
 
-    if (!name.trim()) {
-      newErrors.name = 'Full name is required';
-    }
-
-    if (!email) {
-      newErrors.email = 'Email is required';
-    } else if (!email.includes('@')) {
-      newErrors.email = 'Please enter a valid email';
-    }
-
-    if (!phone) {
-      newErrors.phone = 'Phone number is required';
-    } else if (phone.length < 10) {
-      newErrors.phone = 'Please enter a valid phone number';
-    }
-
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (!confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    if (!agreeTerms) {
-      newErrors.terms = 'Please agree to terms and conditions';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!name.trim()) e.name = 'Full name is required';
+    if (!email) e.email = 'Email is required';
+    else if (!email.includes('@')) e.email = 'Enter a valid email';
+    if (!phone) e.phone = 'Phone number is required';
+    else if (phone.length < 10) e.phone = 'Enter a valid 10-digit number';
+    if (!password) e.password = 'Password is required';
+    else if (password.length < 6) e.password = 'Minimum 6 characters';
+    if (!confirm) e.confirm = 'Please confirm your password';
+    else if (password !== confirm) e.confirm = 'Passwords do not match';
+    if (!agreed) e.terms = 'Please agree to the terms to continue';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleSignup = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validate()) return;
     setLoading(true);
-    try {
-      await signup(name, email, password, phone);
-      router.replace('/(tabs)/profile');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Signup failed. Please try again.';
-      Alert.alert('Signup Failed', errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    try { await signup(name, email, password, phone); router.replace('/(tabs)/profile'); }
+    catch (e) { Alert.alert('Error', e instanceof Error ? e.message : 'Signup failed'); }
+    finally { setLoading(false); }
   };
 
+  const InputField = ({
+    label, icon, value, onChange, placeholder,
+    keyboard = 'default' as any, secure = false,
+    showToggle = false, onToggle = () => {}, error = '',
+  }: any) => (
+    <View style={st.field}>
+      <Text style={st.label}>{label}</Text>
+      <View style={[st.inputBox, error && st.inputBoxError]}>
+        <Text style={st.inputIcon}>{icon}</Text>
+        <TextInput
+          style={st.input}
+          placeholder={placeholder}
+          placeholderTextColor={C.inkMuted}
+          value={value}
+          onChangeText={onChange}
+          keyboardType={keyboard}
+          secureTextEntry={secure}
+          autoCapitalize={keyboard === 'email-address' ? 'none' : 'words'}
+          editable={!loading}
+        />
+        {showToggle && (
+          <TouchableOpacity onPress={onToggle} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={st.eyeIcon}>{secure ? '👁‍🗨' : '👁'}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      {error ? <Text style={st.errText}>{error}</Text> : null}
+    </View>
+  );
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors.light.background }]}>
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentContainer}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backButton}>←</Text>
+    <SafeAreaView style={st.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled">
+
+          <TouchableOpacity style={st.backBtn} onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={st.backIcon}>←</Text>
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: Colors.light.text }]}>Sign Up</Text>
-          <View style={styles.placeholder} />
-        </View>
 
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <Text style={styles.logo}>⚡</Text>
-          <Text style={[styles.appName, { color: Colors.light.text }]}>ONWAY</Text>
-        </View>
-
-        {/* Welcome Text */}
-        <View style={styles.welcomeContainer}>
-          <Text style={[styles.welcomeTitle, { color: Colors.light.text }]}>
-            Create Account
-          </Text>
-          <Text style={styles.welcomeSubtitle}>
-            Join us for fast delivery and amazing deals
-          </Text>
-        </View>
-
-        {/* Form Container */}
-        <View style={styles.formContainer}>
-          {/* Name Input */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: Colors.light.text }]}>Full Name</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { color: Colors.light.text },
-                errors.name ? styles.inputError : {},
-              ]}
-              placeholder="Enter your full name"
-              placeholderTextColor="#999"
-              value={name}
-              onChangeText={(text) => {
-                setName(text);
-                if (errors.name) {
-                  setErrors({ ...errors, name: '' });
-                }
-              }}
-              editable={!loading}
-            />
-            {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
-          </View>
-
-          {/* Email Input */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: Colors.light.text }]}>Email Address</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { color: Colors.light.text },
-                errors.email ? styles.inputError : {},
-              ]}
-              placeholder="Enter your email"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errors.email) {
-                  setErrors({ ...errors, email: '' });
-                }
-              }}
-              keyboardType="email-address"
-              editable={!loading}
-              autoCapitalize="none"
-            />
-            {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
-          </View>
-
-          {/* Phone Input */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: Colors.light.text }]}>Phone Number</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { color: Colors.light.text },
-                errors.phone ? styles.inputError : {},
-              ]}
-              placeholder="Enter your phone number"
-              placeholderTextColor="#999"
-              value={phone}
-              onChangeText={(text) => {
-                setPhone(text);
-                if (errors.phone) {
-                  setErrors({ ...errors, phone: '' });
-                }
-              }}
-              keyboardType="phone-pad"
-              editable={!loading}
-            />
-            {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: Colors.light.text }]}>Password</Text>
-            <View
-              style={[
-                styles.passwordContainer,
-                errors.password ? styles.passwordContainerError : {},
-              ]}
-            >
-              <TextInput
-                style={[styles.passwordInput, { color: Colors.light.text }]}
-                placeholder="Enter password (min 6 characters)"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (errors.password) {
-                    setErrors({ ...errors, password: '' });
-                  }
-                }}
-                secureTextEntry={!showPassword}
-                editable={!loading}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                disabled={loading}
-              >
-                <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
-              </TouchableOpacity>
+          <View style={st.brand}>
+            <View style={st.brandIconBox}>
+              <View style={st.brandDot} />
+              <Text style={st.brandIcon}>⚡</Text>
             </View>
-            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+            <Text style={st.brandName}>OnWay</Text>
           </View>
 
-          {/* Confirm Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: Colors.light.text }]}>Confirm Password</Text>
-            <View
-              style={[
-                styles.passwordContainer,
-                errors.confirmPassword ? styles.passwordContainerError : {},
-              ]}
+          <View style={st.card}>
+            <Text style={st.cardTitle}>Create account</Text>
+            <Text style={st.cardSub}>Join thousands getting healthcare delivered fast</Text>
+
+            <InputField label="Full Name" icon="👤" value={name} onChange={(t: string) => { setName(t); clr('name'); }} placeholder="Your full name" error={errors.name} />
+            <InputField label="Email Address" icon="✉️" value={email} onChange={(t: string) => { setEmail(t); clr('email'); }} placeholder="you@example.com" keyboard="email-address" error={errors.email} />
+            <InputField label="Phone Number" icon="📱" value={phone} onChange={(t: string) => { setPhone(t); clr('phone'); }} placeholder="10-digit mobile number" keyboard="phone-pad" error={errors.phone} />
+            <InputField label="Password" icon="🔒" value={password} onChange={(t: string) => { setPassword(t); clr('password'); }} placeholder="Minimum 6 characters" secure={!showPw} showToggle onToggle={() => setShowPw(!showPw)} error={errors.password} />
+            <InputField label="Confirm Password" icon="🔒" value={confirm} onChange={(t: string) => { setConfirm(t); clr('confirm'); }} placeholder="Repeat your password" secure={!showCpw} showToggle onToggle={() => setShowCpw(!showCpw)} error={errors.confirm} />
+
+            {/* Terms */}
+            <TouchableOpacity style={st.termsRow} onPress={() => { setAgreed(!agreed); clr('terms'); }} disabled={loading} activeOpacity={0.75}>
+              <View style={[st.checkbox, agreed && st.checkboxOn]}>
+                {agreed && <Text style={st.checkmark}>✓</Text>}
+              </View>
+              <Text style={st.termsText}>
+                I agree to the <Text style={st.termsLink}>Terms & Conditions</Text> and <Text style={st.termsLink}>Privacy Policy</Text>
+              </Text>
+            </TouchableOpacity>
+            {errors.terms ? <Text style={st.errText}>{errors.terms}</Text> : null}
+
+            <TouchableOpacity
+              style={[st.primaryBtn, loading && { opacity: 0.65 }]}
+              onPress={handleSignup}
+              disabled={loading}
+              activeOpacity={0.88}
             >
-              <TextInput
-                style={[styles.passwordInput, { color: Colors.light.text }]}
-                placeholder="Confirm your password"
-                placeholderTextColor="#999"
-                value={confirmPassword}
-                onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  if (errors.confirmPassword) {
-                    setErrors({ ...errors, confirmPassword: '' });
-                  }
-                }}
-                secureTextEntry={!showConfirmPassword}
-                editable={!loading}
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                disabled={loading}
-              >
-                <Text style={styles.eyeIcon}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</Text>
-              </TouchableOpacity>
-            </View>
-            {errors.confirmPassword ? (
-              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-            ) : null}
-          </View>
+              {loading
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={st.primaryBtnText}>Create Account</Text>}
+            </TouchableOpacity>
 
-          {/* Terms & Conditions */}
-          <TouchableOpacity
-            style={styles.termsContainer}
-            onPress={() => {
-              setAgreeTerms(!agreeTerms);
-              if (errors.terms) {
-                setErrors({ ...errors, terms: '' });
-              }
-            }}
-            disabled={loading}
-          >
-            <View
-              style={[styles.checkbox, agreeTerms && styles.checkboxChecked]}
+            <View style={st.divider}>
+              <View style={st.dividerLine} />
+              <Text style={st.dividerText}>or continue with</Text>
+              <View style={st.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              style={[st.googleBtn, loading && { opacity: 0.65 }]}
+              onPress={() => promptAsync()}
+              disabled={!request || loading}
+              activeOpacity={0.88}
             >
-              {agreeTerms && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={[styles.termsText, { color: Colors.light.text }]}>
-              I agree to Terms & Conditions
-            </Text>
-          </TouchableOpacity>
-          {errors.terms ? <Text style={styles.errorText}>{errors.terms}</Text> : null}
-
-          {/* Signup Button */}
-          <TouchableOpacity
-            style={[styles.signupButton, loading && styles.signupButtonDisabled]}
-            onPress={handleSignup}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <Text style={styles.signupButtonText}>Create Account</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Divider */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.divider} />
+              <Text style={st.googleG}>G</Text>
+              <Text style={st.googleBtnText}>Continue with Google</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Google Signup Button */}
-          <TouchableOpacity
-            style={[styles.googleButton, loading && styles.googleButtonDisabled]}
-            onPress={() => promptAsync()}
-            disabled={!request || loading}
-          >
-            <Text style={styles.googleIcon}>G</Text>
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
-        </View>
+          <View style={st.footer}>
+            <Text style={st.footerText}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('/login')} disabled={loading}>
+              <Text style={st.footerLink}>Sign in</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Login Link */}
-        <View style={styles.loginContainer}>
-          <Text style={[styles.loginText, { color: Colors.light.text }]}>
-            Already have an account?{' '}
-          </Text>
-          <TouchableOpacity onPress={() => router.push('/login')} disabled={loading}>
-            <Text style={styles.loginLink}>Login</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+const st = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
+  scroll: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40 },
+
+  backBtn: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 24,
   },
-  scrollView: {
-    flex: 1,
+  backIcon: { fontSize: 18, color: C.ink },
+
+  brand: { alignItems: 'center', marginBottom: 24 },
+  brandIconBox: { position: 'relative', marginBottom: 10 },
+  brandDot: { position: 'absolute', top: -2, right: -2, width: 10, height: 10, borderRadius: 5, backgroundColor: C.teal },
+  brandIcon: { fontSize: 36 },
+  brandName: { fontSize: 24, fontWeight: '800', color: C.ink, letterSpacing: -0.5 },
+
+  card: {
+    backgroundColor: C.surface, borderRadius: 24,
+    padding: 24, marginBottom: 24,
+    borderWidth: 1, borderColor: C.border,
+    ...shadow('md'),
   },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 40,
+  cardTitle: { fontSize: 20, fontWeight: '800', color: C.ink, marginBottom: 6 },
+  cardSub: { fontSize: 13, color: C.inkSub, marginBottom: 22 },
+
+  field: { marginBottom: 16 },
+  label: { fontSize: 11, fontWeight: '700', color: C.inkSub, marginBottom: 7, textTransform: 'uppercase', letterSpacing: 0.5 },
+  inputBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    height: 50, backgroundColor: C.bg, borderWidth: 1.5,
+    borderColor: C.border, borderRadius: 14, paddingHorizontal: 14,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  backButton: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  placeholder: {
-    width: 24,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  logo: {
-    fontSize: 48,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  appName: {
-    fontSize: 24,
-    fontWeight: '700',
-    letterSpacing: 2,
-  },
-  welcomeContainer: {
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  welcomeTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  welcomeSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
-  formContainer: {
-    marginBottom: 24,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-    backgroundColor: '#f9f9f9',
-  },
-  inputError: {
-    borderColor: '#E53935',
-    backgroundColor: '#FFEBEE',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    backgroundColor: '#f9f9f9',
-    paddingRight: 12,
-  },
-  passwordContainerError: {
-    borderColor: '#E53935',
-    backgroundColor: '#FFEBEE',
-  },
-  passwordInput: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-  },
-  eyeIcon: {
-    fontSize: 18,
-  },
-  errorText: {
-    color: '#E53935',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  termsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  inputBoxError: { borderColor: C.error, backgroundColor: C.errorBg },
+  inputIcon: { fontSize: 15 },
+  input: { flex: 1, fontSize: 14, color: C.ink, padding: 0, fontWeight: '500' },
+  eyeIcon: { fontSize: 16 },
+  errText: { fontSize: 11, color: C.error, marginTop: 5, fontWeight: '500' },
+
+  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 18 },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    marginRight: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 22, height: 22, borderRadius: 6, borderWidth: 1.5,
+    borderColor: C.border, backgroundColor: C.surface,
+    justifyContent: 'center', alignItems: 'center', marginTop: 1,
   },
-  checkboxChecked: {
-    backgroundColor: '#35aeff',
-    borderColor: '#35aeff',
+  checkboxOn: { backgroundColor: C.blue, borderColor: C.blue },
+  checkmark: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  termsText: { flex: 1, fontSize: 13, color: C.inkSub, lineHeight: 20 },
+  termsLink: { color: C.blue, fontWeight: '600' },
+
+  primaryBtn: {
+    height: 52, backgroundColor: C.blue, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 18,
+    ...shadow('blue'),
   },
-  checkmark: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '700',
+  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: C.border },
+  dividerText: { fontSize: 12, color: C.inkMuted, fontWeight: '500' },
+
+  googleBtn: {
+    height: 52, backgroundColor: C.surface, borderWidth: 1.5,
+    borderColor: C.border, borderRadius: 14,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
   },
-  termsText: {
-    fontSize: 14,
-  },
-  signupButton: {
-    backgroundColor: '#35aeff',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  signupButtonDisabled: {
-    opacity: 0.7,
-  },
-  signupButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e0e0e0',
-  },
-  dividerText: {
-    paddingHorizontal: 12,
-    color: '#999',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  socialContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  socialIcon: {
-    fontSize: 24,
-  },
-  googleButton: {
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 20,
-  },
-  googleButtonDisabled: {
-    opacity: 0.7,
-  },
-  googleButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  googleIcon: {
-    fontSize: 20,
-  },
-  googleInfoContainer: {
-    backgroundColor: '#FFF3CD',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  googleInfoText: {
-    color: '#856404',
-    fontSize: 13,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  loginText: {
-    fontSize: 14,
-  },
-  loginLink: {
-    color: '#2196F3',
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  googleG: { fontSize: 18, fontWeight: '800', color: '#4285F4' },
+  googleBtnText: { fontSize: 15, fontWeight: '600', color: C.ink },
+
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  footerText: { fontSize: 14, color: C.inkSub },
+  footerLink: { fontSize: 14, color: C.blue, fontWeight: '700' },
 });

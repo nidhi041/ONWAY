@@ -1,112 +1,55 @@
 import { Product } from '@/constants/products';
+import { C } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-interface Props {
-  product: Product;
-  size?: 'small' | 'normal';
-}
+interface Props { product: Product; size?: 'small' | 'normal' }
 
 export default function AddToCartButton({ product, size = 'normal' }: Props) {
   const { cartItems, addToCart, updateQuantity } = useCart();
-  const cartItem = cartItems.find((item) => item.id === product.id);
-  const qty = cartItem?.quantity ?? 0;
-
-  const isSmall = size === 'small';
+  const item = cartItems.find(i => i.id === product.id);
+  const qty = item?.quantity ?? 0;
+  const sm = size === 'small';
 
   if (qty === 0) {
     return (
-      <TouchableOpacity
-        style={[styles.addButton, isSmall && styles.addButtonSmall]}
-        onPress={() => addToCart(product)}
-        activeOpacity={0.8}
-      >
-        <Text style={[styles.addButtonText, isSmall && styles.addButtonTextSmall]}>Add +</Text>
+      <TouchableOpacity style={[s.btn, sm && s.btnSm]} onPress={() => addToCart(product)} activeOpacity={0.82}>
+        <Text style={[s.btnText, sm && s.btnTextSm]}>+ Add</Text>
       </TouchableOpacity>
     );
   }
 
   return (
-    <View style={[styles.qtyControl, isSmall && styles.qtyControlSmall]}>
-      <TouchableOpacity
-        style={[styles.qtyBtn, isSmall && styles.qtyBtnSmall]}
-        onPress={() => updateQuantity(product.id, qty - 1)}
-        activeOpacity={0.8}
-      >
-        <Text style={[styles.qtyBtnText, isSmall && styles.qtyBtnTextSmall]}>−</Text>
+    <View style={[s.row, sm && s.rowSm]}>
+      <TouchableOpacity style={s.qBtn} onPress={() => updateQuantity(product.id, qty - 1)} activeOpacity={0.75} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+        <Text style={[s.qBtnText, sm && s.qBtnTextSm]}>−</Text>
       </TouchableOpacity>
-      <Text style={[styles.qtyValue, isSmall && styles.qtyValueSmall]}>{qty}</Text>
-      <TouchableOpacity
-        style={[styles.qtyBtn, isSmall && styles.qtyBtnSmall]}
-        onPress={() => addToCart(product)}
-        activeOpacity={0.8}
-      >
-        <Text style={[styles.qtyBtnText, isSmall && styles.qtyBtnTextSmall]}>+</Text>
+      <Text style={[s.qVal, sm && s.qValSm]}>{qty}</Text>
+      <TouchableOpacity style={s.qBtn} onPress={() => addToCart(product)} activeOpacity={0.75} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+        <Text style={[s.qBtnText, sm && s.qBtnTextSm]}>+</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  addButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 8,
-    width: '100%',
+const s = StyleSheet.create({
+  btn: {
+    backgroundColor: C.blue, borderRadius: 10,
+    paddingVertical: 9, alignItems: 'center', width: '100%',
   },
-  addButtonSmall: {
-    borderRadius: 6,
-    paddingVertical: 6,
+  btnSm: { borderRadius: 8, paddingVertical: 7 },
+  btnText: { color: '#fff', fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
+  btnTextSm: { fontSize: 12 },
+
+  row: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: C.blue, borderRadius: 10, overflow: 'hidden', width: '100%',
   },
-  addButtonText: {
-    color: 'white',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  addButtonTextSmall: {
-    fontSize: 13,
-  },
-  qtyControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2196F3',
-    borderRadius: 8,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  qtyControlSmall: {
-    borderRadius: 6,
-  },
-  qtyBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  qtyBtnSmall: {
-    paddingVertical: 6,
-  },
-  qtyBtnText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  qtyBtnTextSmall: {
-    fontSize: 16,
-  },
-  qtyValue: {
-    color: 'white',
-    fontSize: 15,
-    fontWeight: '700',
-    minWidth: 28,
-    textAlign: 'center',
-  },
-  qtyValueSmall: {
-    fontSize: 13,
-    minWidth: 22,
-  },
+  rowSm: { borderRadius: 8 },
+  qBtn: { flex: 1, paddingVertical: 9, justifyContent: 'center', alignItems: 'center' },
+  qBtnText: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  qBtnTextSm: { fontSize: 15, paddingVertical: 7 },
+  qVal: { color: '#fff', fontSize: 13, fontWeight: '700', minWidth: 26, textAlign: 'center' },
+  qValSm: { fontSize: 12, minWidth: 22 },
 });
