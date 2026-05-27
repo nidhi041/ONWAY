@@ -28,7 +28,7 @@ export default function LoginScreen() {
 
   const handleGoogleLogin = useCallback(async (idToken: string) => {
     setLoading(true);
-    try { await loginWithGoogle(idToken); router.replace('/(tabs)/profile'); }
+    try { await loginWithGoogle(idToken); router.replace('/profile'); }
     catch (e) { Alert.alert('Login Failed', e instanceof Error ? e.message : 'Google login failed'); }
     finally { setLoading(false); }
   }, [loginWithGoogle, router]);
@@ -61,7 +61,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (!validate()) return;
     setLoading(true);
-    try { await login(email, password); router.replace('/(tabs)/profile'); }
+    try { await login(email, password); router.replace('/profile'); }
     catch (e) { Alert.alert('Login Failed', e instanceof Error ? e.message : 'Login failed'); }
     finally { setLoading(false); }
   };

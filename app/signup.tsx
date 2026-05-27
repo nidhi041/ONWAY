@@ -33,7 +33,7 @@ export default function SignupScreen() {
 
   const handleGoogleSignup = useCallback(async (idToken: string) => {
     setLoading(true);
-    try { await loginWithGoogle(idToken); router.replace('/(tabs)/profile'); }
+    try { await loginWithGoogle(idToken); router.replace('/profile'); }
     catch (e) { Alert.alert('Error', e instanceof Error ? e.message : 'Google signup failed'); }
     finally { setLoading(false); }
   }, [loginWithGoogle, router]);
@@ -74,7 +74,7 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     if (!validate()) return;
     setLoading(true);
-    try { await signup(name, email, password, phone); router.replace('/(tabs)/profile'); }
+    try { await signup(name, email, password, phone); router.replace('/profile'); }
     catch (e) { Alert.alert('Error', e instanceof Error ? e.message : 'Signup failed'); }
     finally { setLoading(false); }
   };
