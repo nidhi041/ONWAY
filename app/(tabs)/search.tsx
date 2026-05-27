@@ -26,6 +26,14 @@ const RECENT_SEARCHES: string[] = [
   'Rice',
 ];
 
+const POPULAR = [
+  { id: '1', text: 'Paracetamol', icon: '💊', color: '#EFF6FF' },
+  { id: '2', text: 'Sanitizer',   icon: '🧴', color: '#EFF6FF' },
+  { id: '3', text: 'Vitamin C',   icon: '🍊', color: '#F0FDFA' },
+  { id: '4', text: 'Bandage',     icon: '🩹', color: '#FFF1F2' },
+  { id: '5', text: 'Cough Syrup',  icon: '🧪', color: '#FDF4FF' },
+];
+
 const CATS = [
   { id: '1', name: 'Pain Relief', icon: '💊', color: '#EFF6FF' },
   { id: '2', name: 'Cold & Flu',  icon: '🤧', color: '#EFF6FF' },
@@ -38,7 +46,7 @@ const CATS = [
 export default function SearchScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
-  const [recent, setRecent] = useState(RECENT_DEFAULT);
+  const [recent, setRecent] = useState(RECENT_SEARCHES);
   const [results, setResults] = useState<Product[]>([]);
 
   const search = useCallback((text: string) => {
