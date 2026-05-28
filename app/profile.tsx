@@ -1,5 +1,7 @@
 import { C, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useOrders } from '@/context/OrdersContext';
+import { useProducts } from '@/hooks/useFirestore';
 import { useRouter } from 'expo-router';
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +23,11 @@ const ROUTES: Record<string, string> = {
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, isLoggedIn, logout } = useAuth();
+  const { orders } = useOrders();
+  const { products } = useProducts();
+  
+  const savedCount = products.filter(p => p.rating >= 4.6).length.toString();
+  const ordersCount = orders.length.toString();
 
   if (!isLoggedIn) {
     return (
@@ -70,23 +77,28 @@ export default function ProfileScreen() {
           </View>
           <Text style={st.profileName}>{user?.name}</Text>
           <Text style={st.profileEmail}>{user?.email}</Text>
-          <View style={st.memberPill}>
-            <Text style={st.memberPillText}>⭐ Premium Member</Text>
-          </View>
+          <TouchableOpacity style={st.memberPill} onPress={() => router.push('/edit-profile')} activeOpacity={0.8}>
+            <Text style={st.memberPillText}>✏️ Edit Profile</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Stats */}
         <View style={st.statsCard}>
           {[
-            { v: '12', l: 'Orders', icon: '📦' },
-            { v: '5',  l: 'Saved',  icon: '❤️' },
-            { v: '240',l: 'Points', icon: '⭐' },
+            { v: ordersCount, l: 'Orders', icon: '📦', route: '/orders' },
+            { v: savedCount,  l: 'Saved',  icon: '❤️', route: '/saved-products' },
+            { v: '240',l: 'Points', icon: '⭐', route: '#' },
           ].map((st2, i) => (
-            <View key={st2.l} style={[st.statCell, i < 2 && st.statCellBorder]}>
+            <TouchableOpacity 
+              key={st2.l} 
+              style={[st.statCell, i < 2 && st.statCellBorder]}
+              onPress={() => st2.route !== '#' ? router.push(st2.route as any) : null}
+              activeOpacity={0.7}
+            >
               <Text style={st.statIcon}>{st2.icon}</Text>
               <Text style={st.statVal}>{st2.v}</Text>
               <Text style={st.statLabel}>{st2.l}</Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 

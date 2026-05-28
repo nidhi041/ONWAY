@@ -28,18 +28,50 @@ export default function EditProfileScreen() {
   const [removePhoto, setRemovePhoto] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 0.8, // Slightly compress to speed up upload
-    });
-
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-      setRemovePhoto(false);
-    }
+  const pickImage = () => {
+    Alert.alert(
+      'Change Profile Photo',
+      'Choose an option',
+      [
+        {
+          text: 'Take a Picture',
+          onPress: async () => {
+            const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+            if (!permissionResult.granted) {
+              Alert.alert('Permission needed', 'Camera permission is required to take a picture.');
+              return;
+            }
+            let result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              setImageUri(result.assets[0].uri);
+              setRemovePhoto(false);
+            }
+          }
+        },
+        {
+          text: 'Choose from Gallery',
+          onPress: async () => {
+            let result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              setImageUri(result.assets[0].uri);
+              setRemovePhoto(false);
+            }
+          }
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
   };
 
   const uploadImageToCloudinary = async (uri: string) => {
