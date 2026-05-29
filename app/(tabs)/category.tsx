@@ -1,6 +1,7 @@
 import AddToCartButton from '@/components/AddToCartButton';
-import { PRODUCTS, Product } from '@/constants/products';
-import { Colors } from '@/constants/theme';
+import { Product } from '@/constants/products';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { C, Colors } from '@/constants/theme';
 import { useProducts } from '@/hooks/useFirestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -22,7 +23,7 @@ type SortOption = 'popularity' | 'price-low' | 'price-high' | 'rating';
 type FilterOption = 'all' | 'price-low-high' | 'rating-40' | 'fast-deliver';
 
 const ProductCard = ({ product, onPress }: { product: Product; onPress?: () => void }) => {
-  const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
+  const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/images/medicine.png');
   return (
     <TouchableOpacity style={styles.productCard} onPress={onPress}>
       <View style={styles.imageContainer}>
@@ -57,8 +58,8 @@ export default function CategoryScreen() {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    // Use Firestore products if available, otherwise fall back to local PRODUCTS
-    const source = firestoreProducts.length > 0 ? firestoreProducts : PRODUCTS;
+    // Use Firestore products directly
+    const source = firestoreProducts;
 
     // Exact case-insensitive match on category
     let filtered = source.filter(
@@ -106,9 +107,18 @@ export default function CategoryScreen() {
     <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
       <View style={styles.topBar} />
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#35aeff" />
-        </View>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.grid}>
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <View key={i} style={[styles.productCard, { padding: 12, borderWidth: 1, borderColor: '#f1f5f9' }]}>
+                <Skeleton style={{ width: '100%', height: 120, borderRadius: 12, marginBottom: 12 }} />
+                <Skeleton style={{ width: '80%', height: 14, marginBottom: 8 }} />
+                <Skeleton style={{ width: '40%', height: 12, marginBottom: 12 }} />
+                <Skeleton style={{ width: '100%', height: 36, borderRadius: 8 }} />
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       ) : (
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Header */}
@@ -219,7 +229,13 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingTop: 0,
+    paddingTop: 10,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    gap: 12,
   },
   topBar: {
     height: 12,
@@ -271,8 +287,8 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   filterChipActive: {
-    backgroundColor: '#0C63E4',
-    borderColor: '#0C63E4',
+    backgroundColor: C.blue,
+    borderColor: C.blue,
     elevation: 2,
   },
   filterChipText: {
@@ -309,8 +325,8 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   sortChipActive: {
-    backgroundColor: '#0C63E4',
-    borderColor: '#0C63E4',
+    backgroundColor: C.blue,
+    borderColor: C.blue,
   },
   sortChipText: {
     fontSize: 11,
@@ -433,21 +449,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   addButton: {
-    backgroundColor: '#0C63E4',
+    backgroundColor: C.blueLight,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 10,
     width: '100%',
-    elevation: 2,
-    shadowColor: '#0C63E4',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
+    elevation: 0,
   },
   addButtonText: {
-    color: 'white',
-    fontSize: 14,
+    color: C.blue,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.3,
   },

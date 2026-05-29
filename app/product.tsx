@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const W = Dimensions.get('window').width;
 
 const RelatedCard = ({ product, onPress }: { product: Product; onPress: () => void }) => {
-  const src = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
+  const src = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/images/medicine.png');
   return (
     <TouchableOpacity style={st.relCard} onPress={onPress} activeOpacity={0.85}>
       <View style={st.relImgBox}><RNImage source={src} style={st.relImg} resizeMode="cover" /></View>
@@ -104,7 +104,7 @@ export default function ProductDetailScreen() {
             <Text style={st.deliveryBadgeText}>⚡ 10–20 min</Text>
           </View>
           <RNImage
-            source={product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif')}
+            source={product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/images/medicine.png')}
             style={st.productImg}
             resizeMode="contain"
           />

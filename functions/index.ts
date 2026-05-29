@@ -13,6 +13,23 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || '',
 });
 
+// Middleware to verify Firebase Auth token
+const verifyAuth = async (req: functions.https.Request, res: functions.Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization header' });
+    return null;
+  }
+  const token = authHeader.split('Bearer ')[1];
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    return decodedToken;
+  } catch (error) {
+    res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    return null;
+  }
+};
+
 /**
  * Cloud Function: Create Razorpay Order
  * Called from frontend checkout to create a Razorpay order
@@ -21,12 +38,15 @@ export const createRazorpayOrder = functions.https.onRequest(async (req, res) =>
   // Enable CORS
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
     return;
   }
+
+  const user = await verifyAuth(req, res);
+  if (!user) return;
 
   try {
     const {
@@ -86,12 +106,15 @@ export const createRazorpayOrder = functions.https.onRequest(async (req, res) =>
 export const verifyPaymentSignature = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
     return;
   }
+
+  const user = await verifyAuth(req, res);
+  if (!user) return;
 
   try {
     const {
@@ -195,12 +218,15 @@ export const verifyPaymentSignature = functions.https.onRequest(async (req, res)
 export const logPaymentFailure = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
     return;
   }
+
+  const user = await verifyAuth(req, res);
+  if (!user) return;
 
   try {
     const {

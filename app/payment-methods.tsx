@@ -114,7 +114,7 @@ const AddPaymentModal = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} disabled={isSaving}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} disabled={isSaving}>

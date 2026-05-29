@@ -244,6 +244,7 @@ export default function CheckoutScreen() {
           totalAmount: totalAmount,
           userId: user.id,
           paymentMethod: selectedPayment,
+          shippingAddress: JSON.stringify(shippingAddress),
         },
       });
 

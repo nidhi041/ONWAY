@@ -1,25 +1,28 @@
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { C } from '@/constants/theme';
+import { C, Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
 export default function TabLayout() {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
   const { cartItems } = useCart();
   const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: C.blue,
-        tabBarInactiveTintColor: C.inkMuted,
+        tabBarActiveTintColor: theme.tint,
+        tabBarInactiveTintColor: theme.tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
-          backgroundColor: C.surface,
-          borderTopColor: C.border,
+          backgroundColor: theme.surface || C.surface,
+          borderTopColor: theme.border || C.border,
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 84 : 64,
           paddingBottom: Platform.OS === 'ios' ? 24 : 8,

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { View, StyleSheet, ActivityIndicator, Alert, Text, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
@@ -30,10 +30,13 @@ export default function PaymentGatewayScreen() {
   const subtotal = parseFloat((params.subtotal as string) || '0');
   const deliveryFee = parseFloat((params.deliveryFee as string) || '0');
   const tax = parseFloat((params.tax as string) || '0');
+  const shippingAddressStr = params.shippingAddress as string;
 
   // Convert amount to paise for Razorpay options if needed, but wait, the backend or service
   // already sets the amount on the order. We just need to pass the amount to Razorpay option.
   const amountInPaise = Math.round(parseFloat(amount) * 100);
+
+  const safeJson = (val: any) => JSON.stringify(val || '').replace(/</g, '\\u003c');
 
   const razorpayHtml = `
     <!DOCTYPE html>
@@ -56,15 +59,15 @@ export default function PaymentGatewayScreen() {
       </style>
       <script>
         var options = {
-          key: "${keyId}",
-          amount: "${amountInPaise}",
+          key: ${safeJson(keyId)},
+          amount: ${safeJson(amountInPaise.toString())},
           currency: "INR",
           name: "ONWAY",
           description: "Order Payment",
-          order_id: "${orderId}",
+          order_id: ${safeJson(orderId)},
           prefill: {
-            email: "${email || ''}",
-            contact: "${phone || ''}"
+            email: ${safeJson(email)},
+            contact: ${safeJson(phone)}
           },
           theme: {
             color: "#0C63E4"
@@ -103,13 +106,15 @@ export default function PaymentGatewayScreen() {
         // Handle successful payment
         if (!user) throw new Error('User not found');
 
-        const mockShippingAddress: ShippingAddress = {
-          id: '1',
-          name: 'Alex Johnson',
-          address: 'Apt 4B, Silver Oak Residency, 5th Main, Sector 4, HSR Layout, Bangalore - 560102',
-          phone: phone || '+91 98765 43210',
-          type: 'home',
-        };
+        const actualShippingAddress: ShippingAddress = shippingAddressStr
+          ? JSON.parse(shippingAddressStr)
+          : {
+              id: '1',
+              name: 'Alex Johnson',
+              address: 'Apt 4B, Silver Oak Residency, 5th Main, Sector 4, HSR Layout, Bangalore - 560102',
+              phone: phone || '+91 98765 43210',
+              type: 'home',
+            };
 
         const paymentMethodObj: PaymentMethod = {
           id: paymentMethodType,
@@ -120,7 +125,7 @@ export default function PaymentGatewayScreen() {
         const newOrderId = await createOrder(
           user.id,
           cartItems,
-          mockShippingAddress,
+          actualShippingAddress,
           paymentMethodObj,
           subtotal,
           deliveryFee,

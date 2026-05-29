@@ -26,7 +26,7 @@ export default function ProfileScreen() {
   const { orders } = useOrders();
   const { products } = useProducts();
   
-  const savedCount = products.filter(p => p.rating >= 4.6).length.toString();
+  const savedCount = '0'; // TODO: Implement saved products logic
   const ordersCount = orders.length.toString();
 
   if (!isLoggedIn) {
@@ -67,13 +67,20 @@ export default function ProfileScreen() {
         {/* Profile hero */}
         <View style={st.profileHero}>
           <View style={st.avatarWrap}>
-            <Image
-              source={{ uri: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1775672043/arun_eagwnh.jpg' }}
-              style={st.avatar}
-            />
-            <View style={st.verifiedBadge}>
-              <Text style={st.verifiedIcon}>✓</Text>
-            </View>
+            {(user as any)?.photoURL ? (
+              <Image source={{ uri: (user as any).photoURL }} style={st.avatar} />
+            ) : (
+              <View style={[st.avatar, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#e3f2fd' }]}>
+                <Text style={{ fontSize: 40, fontWeight: '700', color: '#1976d2' }}>
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </Text>
+              </View>
+            )}
+            {(user as any)?.emailVerified && (
+              <View style={st.verifiedBadge}>
+                <Text style={st.verifiedIcon}>✓</Text>
+              </View>
+            )}
           </View>
           <Text style={st.profileName}>{user?.name}</Text>
           <Text style={st.profileEmail}>{user?.email}</Text>
@@ -87,7 +94,7 @@ export default function ProfileScreen() {
           {[
             { v: ordersCount, l: 'Orders', icon: '📦', route: '/orders' },
             { v: savedCount,  l: 'Saved',  icon: '❤️', route: '/saved-products' },
-            { v: '240',l: 'Points', icon: '⭐', route: '#' },
+            { v: '0',l: 'Points', icon: '⭐', route: '#' },
           ].map((st2, i) => (
             <TouchableOpacity 
               key={st2.l} 

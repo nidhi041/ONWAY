@@ -7,8 +7,20 @@ service cloud.firestore {
     // Allow users to read and write their own user document and all nested subcollections
     // (This recursively covers: /users/{userId}, /users/{userId}/addresses, /users/{userId}/cart,
     //  /users/{userId}/orders, /users/{userId}/paymentMethods, /users/{userId}/notifications)
-    match /users/{userId}/{document=**} {
+    match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
+      
+      match /addresses/{id} { allow read, write: if request.auth.uid == userId; }
+      match /cart/{id} { allow read, write: if request.auth.uid == userId; }
+      match /paymentMethods/{id} { allow read, write: if request.auth.uid == userId; }
+      match /notifications/{id} { allow read, write: if request.auth.uid == userId; }
+      
+      match /orders/{orderId} {
+        allow read, create: if request.auth.uid == userId;
+        allow update: if request.auth.uid == userId && 
+                     (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'totalAmount', 'paymentVerified', 'items']));
+        allow delete: if false;
+      }
     }
     
     // Allow public read for products

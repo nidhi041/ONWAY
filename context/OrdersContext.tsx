@@ -73,12 +73,13 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
         unsubscribeOrders();
       }
     };
-  }, [isLoggingOut]);
+  }, []);
 
   const refreshOrders = async () => {
-    // Orders auto-refresh via real-time listener, but this can be used for manual refresh
-    // In practice, the listener will handle updates automatically
     setIsLoading(true);
+    // Real-time listener handles updates, so we just simulate a brief loading state for UX
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setIsLoading(false);
   };
 
   const updateStatus = async (orderId: string, status: Order['status']) => {

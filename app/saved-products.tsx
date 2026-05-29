@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const ProductCard = ({ product, onPress }: { product: Product; onPress?: () => void }) => {
-  const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
+  const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/images/medicine.png');
   return (
     <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.imageContainer}>

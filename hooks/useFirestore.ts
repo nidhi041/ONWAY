@@ -398,10 +398,10 @@ export const useProducts = (category?: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const productsRef = collection(db, 'products');
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const productsRef = collection(db, 'products');
         let q;
         
         if (category) {
@@ -424,10 +424,11 @@ export const useProducts = (category?: string) => {
       }
     };
 
+  useEffect(() => {
     fetchProducts();
   }, [category]);
 
-  return { products, loading, error };
+  return { products, loading, error, refresh: fetchProducts };
 };
 
 export const useProduct = (productId: string) => {
@@ -439,13 +440,12 @@ export const useProduct = (productId: string) => {
     const fetchProduct = async () => {
       try {
         const productDoc = doc(db, 'products', productId);
-        const snapshot = await getDocs(collection(db, 'products'));
-        const data = snapshot.docs.find(d => d.id === productId);
+        const snapshot = await import('firebase/firestore').then((m) => m.getDoc(productDoc));
         
-        if (data) {
+        if (snapshot.exists()) {
           setProduct({
-            id: data.id,
-            ...data.data(),
+            id: snapshot.id,
+            ...snapshot.data(),
           } as Product);
         }
         setLoading(false);

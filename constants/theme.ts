@@ -73,18 +73,22 @@ export const Colors = {
   light: {
     text: C.ink,
     background: C.bg,
+    surface: C.surface,
+    border: C.border,
     tint: C.blue,
     icon: C.inkMuted,
     tabIconDefault: C.inkMuted,
     tabIconSelected: C.blue,
   },
   dark: {
-    text: '#ECEDEE',
-    background: C.dark,
-    tint: '#ffffff',
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: '#ffffff',
+    text: '#F8FAFC',
+    background: '#0F172A',
+    surface: '#1E293B',
+    border: '#334155',
+    tint: '#3B82F6',
+    icon: '#94A3B8',
+    tabIconDefault: '#94A3B8',
+    tabIconSelected: '#3B82F6',
   },
 };
 

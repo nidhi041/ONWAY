@@ -1,5 +1,6 @@
 import { C, shadow } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useAddresses } from '@/hooks/useFirestore';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -14,10 +15,12 @@ const CartItem = ({ item, onQty, onRemove }: {
   item: any;
   onQty: (id: string, q: number) => void;
   onRemove: (id: string) => void;
-}) => (
+}) => {
+  const imageSource = typeof item.image === 'string' ? { uri: item.image } : item.image;
+  return (
   <View style={st.item}>
     <View style={st.itemImgBox}>
-      <RNImage source={item.image} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+      <RNImage source={imageSource} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
     </View>
     <View style={st.itemBody}>
       <View style={st.itemTop}>
@@ -60,14 +63,18 @@ const CartItem = ({ item, onQty, onRemove }: {
         </View>
       </View>
     </View>
-  </View>
-);
+    </View>
+  );
+};
 
 export default function CartScreen() {
   const router = useRouter();
   const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
+  const { addresses } = useAddresses();
   const [coupon, setCoupon] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
+
+  const defaultAddress = addresses?.find(a => a.isDefault) || addresses?.[0];
 
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const discount = couponApplied ? 2.5 : 0;
@@ -102,8 +109,8 @@ export default function CartScreen() {
                 <Text style={st.deliveryIconText}>🚚</Text>
               </View>
               <View style={st.deliveryInfo}>
-                <Text style={st.deliveryLabel}>DELIVERING TO HOME</Text>
-                <Text style={st.deliveryAddr}>Apt 4B, Central Park Heights</Text>
+                <Text style={st.deliveryLabel}>DELIVERING TO {defaultAddress?.type?.toUpperCase() || 'HOME'}</Text>
+                <Text style={st.deliveryAddr} numberOfLines={1}>{defaultAddress?.address || 'Please add an address at checkout'}</Text>
               </View>
               <View style={st.etaPill}>
                 <Text style={st.etaText}>⚡ 15 min</Text>

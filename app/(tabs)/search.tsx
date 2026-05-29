@@ -1,5 +1,6 @@
 import AddToCartButton from '@/components/AddToCartButton';
-import { PRODUCTS, Product } from '@/constants/products';
+import { Product } from '@/constants/products';
+import { useProducts } from '@/hooks/useFirestore';
 import { C, shadow } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -49,11 +50,13 @@ export default function SearchScreen() {
   const [recent, setRecent] = useState(RECENT_SEARCHES);
   const [results, setResults] = useState<Product[]>([]);
 
+  const { products: allProducts } = useProducts();
+
   const search = useCallback((text: string) => {
     setQuery(text);
     if (text.trim()) {
       if (!recent.includes(text)) setRecent(r => [text, ...r.slice(0, 4)]);
-      setResults(PRODUCTS.filter(p =>
+      setResults(allProducts.filter(p =>
         p.name.toLowerCase().includes(text.toLowerCase()) ||
         p.brand?.toLowerCase().includes(text.toLowerCase()) ||
         p.category.toLowerCase().includes(text.toLowerCase())
@@ -61,7 +64,7 @@ export default function SearchScreen() {
     } else {
       setResults([]);
     }
-  }, [recent]);
+  }, [recent, allProducts]);
 
   const ResultCard = ({ product }: { product: Product }) => (
     <TouchableOpacity
