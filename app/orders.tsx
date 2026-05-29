@@ -2,6 +2,7 @@ import { Colors } from '@/constants/theme';
 import { useOrders } from '@/context/OrdersContext';
 import { Order } from '@/services/ordersService';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -9,6 +10,7 @@ import {
     Text,
     TouchableOpacity,
     View,
+    RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -119,7 +121,14 @@ const OrderCard = ({ order, onPress }: { order: Order; onPress: () => void }) =>
 
 export default function OrdersScreen() {
   const router = useRouter();
-  const { orders, isLoading, error } = useOrders();
+  const { orders, isLoading, error, refreshOrders } = useOrders();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshOrders();
+    setRefreshing(false);
+  };
 
   const handleOrderPress = (orderId: string) => {
     router.push(`/ordertracking?orderId=${orderId}`);
@@ -168,6 +177,9 @@ export default function OrdersScreen() {
         <FlatList
           data={orders}
           keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#0C63E4']} />
+          }
           renderItem={({ item }) => (
             <OrderCard
               order={item}

@@ -1,5 +1,7 @@
 import { C, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '@/config/firebase';
 import * as Google from 'expo-auth-session/providers/google';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -64,6 +66,22 @@ export default function LoginScreen() {
     try { await login(email, password); router.replace('/profile'); }
     catch (e) { Alert.alert('Login Failed', e instanceof Error ? e.message : 'Login failed'); }
     finally { setLoading(false); }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email || !email.includes('@')) {
+      setErrors({ email: 'Please enter a valid email to reset password' });
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert('Success', 'Password reset email sent! Check your inbox.');
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to send reset email');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -131,7 +149,7 @@ export default function LoginScreen() {
               {errors.password ? <Text style={st.errText}>{errors.password}</Text> : null}
             </View>
 
-            <TouchableOpacity style={st.forgotRow} disabled={loading}>
+            <TouchableOpacity style={st.forgotRow} disabled={loading} onPress={handleForgotPassword}>
               <Text style={st.forgotText}>Forgot password?</Text>
             </TouchableOpacity>
 

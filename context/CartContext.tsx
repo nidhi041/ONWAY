@@ -31,10 +31,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  let unsubscribeCart: (() => void) | null = null;
 
   // Listen to auth changes and set up cart listener
   useEffect(() => {
+    let unsubscribeCart: (() => void) | null = null;
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       
@@ -78,7 +78,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         unsubscribeCart();
       }
     };
-  }, [isLoggingOut]);
+  }, []);
 
   const addToCart = async (product: Product) => {
     if (!currentUser) return;

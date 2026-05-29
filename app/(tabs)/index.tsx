@@ -1,15 +1,17 @@
 import AddToCartButton from '@/components/AddToCartButton';
 import { Product } from '@/constants/products';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { C, shadow } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useFirestore';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator, Animated, Dimensions,
     FlatList, ImageBackground,
     Image as RNImage, ScrollView, StatusBar,
-    StyleSheet, Text, TouchableOpacity, View
+    StyleSheet, Text, TouchableOpacity, View, RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -41,7 +43,7 @@ const CatChip = ({ item, onPress }: { item: typeof CATS[0]; onPress: () => void 
 
 // ─── Product Card ──────────────────────────────────────────────────────────────
 const ProductCard = ({ product, onPress }: { product: Product; onPress: () => void }) => {
-  const src = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/ProductImage/red-bull.avif');
+  const src = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/images/medicine.png');
   const disc = product.originalPrice && product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
   return (
@@ -90,8 +92,10 @@ const SectionHead = ({ title, onSeeAll }: { title: string; onSeeAll?: () => void
 // ─── Home Screen ───────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { cartItems } = useCart();
-  const { products, loading } = useProducts();
+  const { products, loading, refresh } = useProducts();
+  const [refreshing, setRefreshing] = useState(false);
   const slideAnim = useRef(new Animated.Value(120)).current;
 
   const totalQty   = cartItems.reduce((s, i) => s + i.quantity, 0);
@@ -109,8 +113,16 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={st.container}>
         <View style={st.loadingBox}>
-          <ActivityIndicator size="large" color={C.blue} />
-          <Text style={st.loadingText}>Loading products…</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 16 }}>
+            {[1, 2, 3].map(i => (
+              <View key={i} style={[st.card, { padding: 12, borderWidth: 1, borderColor: '#f1f5f9' }]}>
+                <Skeleton style={{ width: '100%', height: 100, borderRadius: 12, marginBottom: 12 }} />
+                <Skeleton style={{ width: '80%', height: 14, marginBottom: 8 }} />
+                <Skeleton style={{ width: '40%', height: 12, marginBottom: 12 }} />
+                <Skeleton style={{ width: '100%', height: 32, borderRadius: 8 }} />
+              </View>
+            ))}
+          </ScrollView>
         </View>
       </SafeAreaView>
     );
@@ -120,7 +132,17 @@ export default function HomeScreen() {
     <SafeAreaView style={st.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: hasCart ? 130 : 32 }}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: hasCart ? 130 : 32 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={async () => {
+            setRefreshing(true);
+            await refresh();
+            setRefreshing(false);
+          }} colors={[C.blue]} />
+        }
+      >
 
         {/* ── Header ── */}
         <View style={st.header}>
@@ -136,7 +158,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           <TouchableOpacity style={st.avatarBtn} onPress={() => router.push('/profile')} activeOpacity={0.85}>
-            <Text style={st.avatarInitial}>A</Text>
+            <Text style={st.avatarInitial}>{user?.name ? user.name.charAt(0).toUpperCase() : '👤'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -162,11 +184,11 @@ export default function HomeScreen() {
         {/* ── Categories ── */}
         <View style={st.section}>
           <SectionHead title="Categories" />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.catRow}>
+          <View style={st.catRow}>
             {CATS.map(c => (
               <CatChip key={c.id} item={c} onPress={() => router.push(`/(tabs)/category?name=${c.filterName}`)} />
             ))}
-          </ScrollView>
+          </View>
         </View>
 
         {/* ── Hero Banner ── */}
@@ -319,10 +341,11 @@ const st = StyleSheet.create({
   seeAll: { fontSize: 13, color: C.blue, fontWeight: '600' },
 
   // categories
-  catRow: { paddingHorizontal: 20, gap: 10 },
+  catRow: { paddingHorizontal: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   catChip: {
+    width: (W - 40 - 24) / 3,
     alignItems: 'center', borderRadius: 16,
-    paddingHorizontal: 14, paddingVertical: 12, gap: 6, minWidth: 76,
+    paddingHorizontal: 8, paddingVertical: 14, gap: 8,
     borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)',
   },
   catEmoji: { fontSize: 22 },
