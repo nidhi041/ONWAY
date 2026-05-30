@@ -3,7 +3,8 @@ import { Product } from '@/constants/products';
 import { useProducts } from '@/hooks/useFirestore';
 import { C, shadow } from '@/constants/theme';
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     Dimensions, FlatList, Image as RNImage, ScrollView,
     StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
@@ -47,24 +48,55 @@ const CATS = [
 export default function SearchScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
-  const [recent, setRecent] = useState(RECENT_SEARCHES);
+  const [recent, setRecent] = useState<string[]>([]);
   const [results, setResults] = useState<Product[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { products: allProducts } = useProducts();
 
+  // Load recent searches from AsyncStorage on mount
+  useEffect(() => {
+    AsyncStorage.getItem('recentSearches').then((val) => {
+      if (val) setRecent(JSON.parse(val));
+      else setRecent(RECENT_SEARCHES);
+    }).catch(() => setRecent(RECENT_SEARCHES));
+  }, []);
+
+  const saveRecent = useCallback(async (term: string) => {
+    setRecent(prev => {
+      const updated = [term, ...prev.filter(r => r !== term)].slice(0, 8);
+      AsyncStorage.setItem('recentSearches', JSON.stringify(updated)).catch(() => {});
+      return updated;
+    });
+  }, []);
+
   const search = useCallback((text: string) => {
     setQuery(text);
-    if (text.trim()) {
-      if (!recent.includes(text)) setRecent(r => [text, ...r.slice(0, 4)]);
+    // Clear existing debounce
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!text.trim()) {
+      setResults([]);
+      return;
+    }
+    // Debounce 300ms — only search after user stops typing
+    debounceRef.current = setTimeout(() => {
       setResults(allProducts.filter(p =>
         p.name.toLowerCase().includes(text.toLowerCase()) ||
         p.brand?.toLowerCase().includes(text.toLowerCase()) ||
         p.category.toLowerCase().includes(text.toLowerCase())
       ));
-    } else {
-      setResults([]);
-    }
-  }, [recent, allProducts]);
+    }, 300);
+  }, [allProducts]);
+
+  const selectSuggestion = useCallback((text: string) => {
+    setQuery(text);
+    saveRecent(text);
+    setResults(allProducts.filter(p =>
+      p.name.toLowerCase().includes(text.toLowerCase()) ||
+      p.brand?.toLowerCase().includes(text.toLowerCase()) ||
+      p.category.toLowerCase().includes(text.toLowerCase())
+    ));
+  }, [allProducts, saveRecent]);
 
   const ResultCard = ({ product }: { product: Product }) => (
     <TouchableOpacity
@@ -148,7 +180,7 @@ export default function SearchScreen() {
                 <TouchableOpacity
                   key={p.id}
                   style={[st.pill, { backgroundColor: p.color }]}
-                  onPress={() => search(p.text)}
+                  onPress={() => selectSuggestion(p.text)}
                   activeOpacity={0.75}
                 >
                   <Text style={st.pillIcon}>{p.icon}</Text>
@@ -170,7 +202,7 @@ export default function SearchScreen() {
               <View style={st.recentCard}>
                 {recent.map((r, i) => (
                   <View key={i}>
-                    <TouchableOpacity style={st.recentRow} onPress={() => search(r)} activeOpacity={0.7}>
+                    <TouchableOpacity style={st.recentRow} onPress={() => selectSuggestion(r)} activeOpacity={0.7}>
                       <View style={st.recentIconBox}><Text style={st.recentIcon}>⏱</Text></View>
                       <Text style={st.recentText}>{r}</Text>
                       <Text style={st.recentArrow}>›</Text>

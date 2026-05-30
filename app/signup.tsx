@@ -26,6 +26,19 @@ export default function SignupScreen() {
   const [agreed, setAgreed] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const getPasswordStrength = (pw: string): { level: 0 | 1 | 2 | 3; label: string; color: string } => {
+    if (!pw) return { level: 0, label: '', color: '' };
+    let score = 0;
+    if (pw.length >= 6) score++;
+    if (pw.length >= 10) score++;
+    if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    if (score <= 1) return { level: 1, label: 'Weak', color: '#EF4444' };
+    if (score === 2) return { level: 2, label: 'Fair', color: '#F59E0B' };
+    return { level: 3, label: 'Strong', color: '#22C55E' };
+  };
+  const pwStrength = getPasswordStrength(password);
+
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: '40420149902-40c5dv01ohpul08gknr12ef6ftl2cu2p.apps.googleusercontent.com',
     clientId: '40420149902-40c5dv01ohpul08gknr12ef6ftl2cu2p.apps.googleusercontent.com',
@@ -135,6 +148,22 @@ export default function SignupScreen() {
             <InputField label="Email Address" icon="✉️" value={email} onChange={(t: string) => { setEmail(t); clr('email'); }} placeholder="you@example.com" keyboard="email-address" error={errors.email} />
             <InputField label="Phone Number" icon="📱" value={phone} onChange={(t: string) => { setPhone(t); clr('phone'); }} placeholder="10-digit mobile number" keyboard="phone-pad" error={errors.phone} />
             <InputField label="Password" icon="🔒" value={password} onChange={(t: string) => { setPassword(t); clr('password'); }} placeholder="Minimum 6 characters" secure={!showPw} showToggle onToggle={() => setShowPw(!showPw)} error={errors.password} />
+            {password.length > 0 && (
+              <View style={st.strengthContainer}>
+                <View style={st.strengthBars}>
+                  {[1, 2, 3].map(i => (
+                    <View
+                      key={i}
+                      style={[
+                        st.strengthBar,
+                        pwStrength.level >= i && { backgroundColor: pwStrength.color }
+                      ]}
+                    />
+                  ))}
+                </View>
+                <Text style={[st.strengthLabel, { color: pwStrength.color }]}>{pwStrength.label}</Text>
+              </View>
+            )}
             <InputField label="Confirm Password" icon="🔒" value={confirm} onChange={(t: string) => { setConfirm(t); clr('confirm'); }} placeholder="Repeat your password" secure={!showCpw} showToggle onToggle={() => setShowCpw(!showCpw)} error={errors.confirm} />
 
             {/* Terms */}
@@ -229,6 +258,15 @@ const st = StyleSheet.create({
   errText: { fontSize: 11, color: C.error, marginTop: 5, fontWeight: '500' },
 
   termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 18 },
+
+  strengthContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: -10, marginBottom: 16 },
+  strengthBars: { flexDirection: 'row', gap: 5, flex: 1 },
+  strengthBar: {
+    flex: 1, height: 4, borderRadius: 2,
+    backgroundColor: '#E2E8F0',
+  },
+  strengthLabel: { fontSize: 11, fontWeight: '700', minWidth: 40, textAlign: 'right' },
+
   checkbox: {
     width: 22, height: 22, borderRadius: 6, borderWidth: 1.5,
     borderColor: C.border, backgroundColor: C.surface,

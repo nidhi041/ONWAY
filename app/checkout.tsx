@@ -4,11 +4,13 @@ import { useCart } from '@/context/CartContext';
 import { createOrder, PaymentMethod, ShippingAddress } from '@/services/ordersService';
 import { createRazorpayOrder, logPaymentFailure } from '@/services/razorpayService';
 import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAddresses } from '@/hooks/useFirestore';
 import {
     ActivityIndicator,
     Alert,
+    Animated,
+    Dimensions,
     Platform,
     ScrollView,
     StatusBar,
@@ -18,6 +20,8 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const SCREEN_W = Dimensions.get('window').width;
 
 type AddressType = 'home' | 'work';
 type PaymentMethodType = 'upi' | 'cards' | 'cod' | 'netbanking';
@@ -138,6 +142,19 @@ export default function CheckoutScreen() {
   const { addresses, loading: addressesLoading } = useAddresses();
   const [currentStep, setCurrentStep] = useState(1); // 1: Address, 2: Payment, 3: Review
   const [selectedAddress, setSelectedAddress] = useState<string>('');
+  const stepAnim = useRef(new Animated.Value(0)).current;
+
+  const animateToStep = (newStep: number) => {
+    const direction = newStep > currentStep ? SCREEN_W : -SCREEN_W;
+    stepAnim.setValue(direction);
+    setCurrentStep(newStep);
+    Animated.spring(stepAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 80,
+      friction: 12,
+    }).start();
+  };
 
   // Automatically select default address or first address when loaded
   useEffect(() => {
@@ -208,12 +225,16 @@ export default function CheckoutScreen() {
 
         await clearCart();
 
-        Alert.alert('Success', 'Order placed successfully! COD payment selected.', [
-          {
-            text: 'Track Order',
-            onPress: () => router.push(`/ordertracking?orderId=${orderId}`),
+        // Navigate to dedicated order confirmation screen
+        router.replace({
+          pathname: '/order-confirmation',
+          params: {
+            orderId,
+            totalAmount: totalAmount.toFixed(2),
+            paymentMethod: selectedPayment,
+            itemCount: cartItems.length,
           },
-        ]);
+        });
         setIsPlacingOrder(false);
         return;
       }
@@ -300,9 +321,16 @@ export default function CheckoutScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
+        {/* Header — single back arrow, smart: goes back a step or to cart */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (currentStep > 1) animateToStep(currentStep - 1);
+              else router.back();
+            }}
+            style={styles.backBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
             <Text style={styles.backBtnText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Checkout</Text>
@@ -342,6 +370,7 @@ export default function CheckoutScreen() {
         </View>
 
         {/* Content based on current step */}
+        <Animated.View style={{ transform: [{ translateX: stepAnim }] }}>
         {currentStep === 1 && (
           <View style={styles.stepContent}>
             {/* Delivery Address */}
@@ -417,6 +446,7 @@ export default function CheckoutScreen() {
             </View>
           </View>
         )}
+        </Animated.View>
 
         {/* Order Summary */}
         <View style={styles.summaryCard}>
@@ -481,27 +511,18 @@ export default function CheckoutScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Action Bar */}
+      {/* Action Bar — Continue / Place Order only (back handled by header arrow) */}
       <View style={styles.actionBar}>
         <View style={styles.buttonRow}>
-          {currentStep > 1 && (
-            <TouchableOpacity
-              style={styles.backStepBtn}
-              onPress={() => setCurrentStep(currentStep - 1)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.backStepBtnText}>← Back</Text>
-            </TouchableOpacity>
-          )}
           {currentStep < 3 ? (
             <TouchableOpacity
-              style={[styles.nextBtn, currentStep > 1 && { flex: 1 }]}
+              style={styles.nextBtn}
               onPress={() => {
                 if (currentStep === 1 && !selectedAddress) {
-                  Alert.alert('Error', 'Please select or add a delivery address to continue.');
+                  Alert.alert('Select Address', 'Please select or add a delivery address to continue.');
                   return;
                 }
-                setCurrentStep(currentStep + 1);
+                animateToStep(currentStep + 1);
               }}
               activeOpacity={0.88}
             >
@@ -509,7 +530,7 @@ export default function CheckoutScreen() {
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.placeOrderBtn, currentStep > 1 && { flex: 1 }]}
+              style={styles.placeOrderBtn}
               onPress={handlePlaceOrder}
               disabled={isPlacingOrder}
               activeOpacity={0.88}
