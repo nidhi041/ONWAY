@@ -36,6 +36,11 @@ export default function PaymentGatewayScreen() {
   // already sets the amount on the order. We just need to pass the amount to Razorpay option.
   const amountInPaise = Math.round(parseFloat(amount) * 100);
 
+  // Razorpay requires a REAL order_id from its API.
+  // If this is a mock/test order (starts with 'order_mock_'), don't pass order_id.
+  const isRealRazorpayOrder = orderId && !orderId.startsWith('order_mock_') && !orderId.startsWith('order_local');
+
+  // Safely encode values to prevent XSS in WebView HTML
   const safeJson = (val: any) => JSON.stringify(val || '').replace(/</g, '\\u003c');
 
   const razorpayHtml = `
@@ -58,38 +63,49 @@ export default function PaymentGatewayScreen() {
         }
       </style>
       <script>
-        var options = {
-          key: ${safeJson(keyId)},
-          amount: ${safeJson(amountInPaise.toString())},
-          currency: "INR",
-          name: "ONWAY",
-          description: "Order Payment",
-          order_id: ${safeJson(orderId)},
-          prefill: {
-            email: ${safeJson(email)},
-            contact: ${safeJson(phone)}
-          },
-          theme: {
-            color: "#0C63E4"
-          },
-          handler: function (response) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'success', data: response }));
-          },
-          modal: {
-            ondismiss: function() {
-              window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'dismissed' }));
-            }
-          }
+        // Catch any JS errors and report them
+        window.onerror = function(msg, src, line, col, err) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'jserror', data: { message: msg, source: src, line: line } }));
+          return true;
         };
-        var rzp = new Razorpay(options);
-        rzp.on('payment.failed', function (response){
-          window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'failed', data: response.error }));
-        });
-        
+
         window.onload = function() {
-          setTimeout(function() {
-            rzp.open();
-          }, 500);
+          try {
+            var options = {
+              key: ${safeJson(keyId)},
+              amount: ${amountInPaise},
+              currency: "INR",
+              name: "ONWAY",
+              description: "Healthcare Order Payment",
+              ${isRealRazorpayOrder ? `order_id: ${safeJson(orderId)},` : '// No order_id in test/mock mode'}
+              prefill: {
+                email: ${safeJson(email)},
+                contact: ${safeJson(phone)}
+              },
+              theme: {
+                color: "#2563EB"
+              },
+              handler: function (response) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'success', data: response }));
+              },
+              modal: {
+                ondismiss: function() {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'dismissed' }));
+                },
+                escape: false,
+                backdropclose: false
+              }
+            };
+            var rzp = new Razorpay(options);
+            rzp.on('payment.failed', function (response){
+              window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'failed', data: response.error }));
+            });
+            setTimeout(function() {
+              rzp.open();
+            }, 800);
+          } catch(e) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'jserror', data: { message: e.message || 'Unknown error' } }));
+          }
         };
       </script>
     </body>
@@ -101,7 +117,12 @@ export default function PaymentGatewayScreen() {
       const message = JSON.parse(event.nativeEvent.data);
       console.log('WebView Message:', message);
 
-      if (message.event === 'success') {
+      if (message.event === 'jserror') {
+        // JS error inside WebView - log it
+        console.error('WebView JS Error:', message.data);
+        // Don't show to user unless it's unrecoverable
+        return;
+      } else if (message.event === 'success') {
         setProcessing(true);
         // Handle successful payment
         if (!user) throw new Error('User not found');
@@ -133,7 +154,15 @@ export default function PaymentGatewayScreen() {
         );
 
         await clearCart();
-        router.push(`/ordertracking?orderId=${newOrderId}`);
+        router.replace({
+          pathname: '/order-confirmation',
+          params: {
+            orderId: newOrderId,
+            totalAmount: (subtotal + deliveryFee + tax).toFixed(2),
+            paymentMethod: paymentMethodType,
+            itemCount: cartItems.length,
+          },
+        });
 
       } else if (message.event === 'failed') {
         Alert.alert('Payment Failed', message.data?.description || 'The payment could not be processed.', [
@@ -172,6 +201,24 @@ export default function PaymentGatewayScreen() {
         javaScriptEnabled={true}
         domStorageEnabled={true}
         startInLoadingState={true}
+        mixedContentMode="always"
+        allowsInlineMediaPlayback={true}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.error('WebView error:', nativeEvent);
+          Alert.alert(
+            'Connection Error',
+            'Could not load the payment page. Please check your internet connection and try again.',
+            [
+              { text: 'Try Again', onPress: () => webViewRef.current?.reload() },
+              { text: 'Cancel', onPress: () => router.back(), style: 'cancel' },
+            ]
+          );
+        }}
+        onHttpError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView HTTP error:', nativeEvent.statusCode);
+        }}
         renderLoading={() => (
           <View style={[StyleSheet.absoluteFill, styles.centerContainer]}>
             <ActivityIndicator size="large" color="#0C63E4" />

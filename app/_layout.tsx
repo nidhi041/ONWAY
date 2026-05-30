@@ -39,6 +39,8 @@ export default function RootLayout() {
                 <Stack.Screen name="help-support" options={{ headerShown: false }} />
                 <Stack.Screen name="ordertracking" options={{ headerShown: false }} />
                 <Stack.Screen name="payment-gateway" options={{ headerShown: false }} />
+                <Stack.Screen name="saved-products" options={{ headerShown: false }} />
+                <Stack.Screen name="order-confirmation" options={{ headerShown: false }} />
               </Stack>
               <StatusBar style="dark" backgroundColor="#ffffff00" />
             </ThemeProvider>

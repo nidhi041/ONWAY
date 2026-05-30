@@ -16,7 +16,12 @@ const CartItem = ({ item, onQty, onRemove }: {
   onQty: (id: string, q: number) => void;
   onRemove: (id: string) => void;
 }) => {
-  const imageSource = typeof item.image === 'string' ? { uri: item.image } : item.image;
+  // Support both Firestore string URLs (imageUrl) and local require() references (image)
+  const imageSource = item.imageUrl
+    ? { uri: item.imageUrl }
+    : typeof item.image === 'string'
+      ? { uri: item.image }
+      : item.image || require('@/assets/images/medicine.png');
   return (
   <View style={st.item}>
     <View style={st.itemImgBox}>
@@ -77,7 +82,15 @@ export default function CartScreen() {
   const defaultAddress = addresses?.find(a => a.isDefault) || addresses?.[0];
 
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
-  const discount = couponApplied ? 2.5 : 0;
+  // Real coupon codes with meaningful discounts
+  const VALID_COUPONS: Record<string, number> = {
+    'ONWAY10': Math.round(subtotal * 0.10 * 100) / 100,
+    'ONWAY20': Math.round(subtotal * 0.20 * 100) / 100,
+    'FLAT50': subtotal >= 200 ? 50 : 0,
+    'HEALTH15': Math.round(subtotal * 0.15 * 100) / 100,
+  };
+  const [couponError, setCouponError] = useState('');
+  const discount = couponApplied ? (VALID_COUPONS[coupon.trim().toUpperCase()] ?? 0) : 0;
   const total    = subtotal - discount;
 
   return (
@@ -149,7 +162,24 @@ export default function CartScreen() {
                 />
                 <TouchableOpacity
                   style={[st.couponBtn, couponApplied && st.couponBtnApplied]}
-                  onPress={() => { if (coupon.trim()) setCouponApplied(!couponApplied); }}
+                  onPress={() => {
+                    const code = coupon.trim().toUpperCase();
+                    if (!code) { setCouponError('Please enter a coupon code'); return; }
+                    const VALID_COUPONS_CHECK: Record<string, boolean> = {
+                      'ONWAY10': true, 'ONWAY20': true, 'FLAT50': true, 'HEALTH15': true,
+                    };
+                    if (couponApplied) {
+                      setCouponApplied(false); setCouponError('');
+                    } else if (VALID_COUPONS_CHECK[code]) {
+                      if (code === 'FLAT50' && subtotal < 200) {
+                        setCouponError('FLAT50 requires minimum cart value of ₹200');
+                      } else {
+                        setCouponApplied(true); setCouponError('');
+                      }
+                    } else {
+                      setCouponError('Invalid coupon code. Try ONWAY10, ONWAY20, or FLAT50');
+                    }
+                  }}
                   activeOpacity={0.85}
                 >
                   <Text style={[st.couponBtnText, couponApplied && st.couponBtnTextApplied]}>
@@ -157,6 +187,11 @@ export default function CartScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
+              {couponError ? (
+                <View style={st.couponErrorBanner}>
+                  <Text style={st.couponErrorText}>⚠️ {couponError}</Text>
+                </View>
+              ) : null}
               {couponApplied && (
                 <View style={st.savingsBanner}>
                   <Text style={st.savingsText}>🎉 You saved ₹{discount.toFixed(2)} with this code!</Text>
@@ -184,8 +219,11 @@ export default function CartScreen() {
                 )}
                 <View style={st.summaryDivider} />
                 <View style={st.summaryRow}>
-                  <Text style={st.summaryTotalKey}>Total Payable</Text>
+                  <Text style={st.summaryTotalKey}>Subtotal</Text>
                   <Text style={st.summaryTotalVal}>₹{total.toFixed(2)}</Text>
+                </View>
+                <View style={[st.summaryRow, { marginBottom: 0 }]}>
+                  <Text style={[st.summaryKey, { fontStyle: 'italic', fontSize: 11 }]}>+ Tax (16.5%) calculated at checkout</Text>
                 </View>
               </View>
             </View>
@@ -313,6 +351,11 @@ const st = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8,
   },
   savingsText: { fontSize: 12, color: C.success, fontWeight: '600' },
+  couponErrorBanner: {
+    marginTop: 8, backgroundColor: C.errorBg, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8,
+  },
+  couponErrorText: { fontSize: 12, color: C.error, fontWeight: '500' },
 
   summaryCard: {
     backgroundColor: C.surface, borderRadius: 16,

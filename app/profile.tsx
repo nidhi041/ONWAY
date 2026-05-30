@@ -1,7 +1,7 @@
 import { C, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useOrders } from '@/context/OrdersContext';
-import { useProducts } from '@/hooks/useFirestore';
+import { useNotifications } from '@/hooks/useFirestore';
 import { useRouter } from 'expo-router';
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,7 +10,7 @@ const MENU = [
   { id: '1', icon: '📦', label: 'My Orders',          sub: 'Track, reorder, return',   color: '#EFF6FF', iconBg: '#DBEAFE' },
   { id: '2', icon: '📍', label: 'Saved Addresses',    sub: 'Home, Work & more',         color: '#FFF1F2', iconBg: '#FFE4E6' },
   { id: '3', icon: '💳', label: 'Payment Methods',    sub: 'Cards & UPI',               color: '#F0FDFA', iconBg: '#CCFBF1' },
-  { id: '4', icon: '🔔', label: 'Notifications',      sub: 'Offers & updates',          color: '#FFFBEB', iconBg: '#FEF3C7', badge: 3 },
+  { id: '4', icon: '🔔', label: 'Notifications',      sub: 'Offers & updates',          color: '#FFFBEB', iconBg: '#FEF3C7' },
   { id: '5', icon: '🛡️', label: 'Privacy & Security', sub: 'Password & account safety', color: '#EFF6FF', iconBg: '#DBEAFE' },
   { id: '6', icon: '❓', label: 'Help & Support',     sub: '24/7 assistance',           color: '#F0FDFA', iconBg: '#CCFBF1' },
 ];
@@ -24,8 +24,9 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, isLoggedIn, logout } = useAuth();
   const { orders } = useOrders();
-  const { products } = useProducts();
   
+  const { notifications } = useNotifications();
+  const unreadCount = notifications.filter(n => !n.read).length;
   const savedCount = '0'; // TODO: Implement saved products logic
   const ordersCount = orders.length.toString();
 
@@ -128,8 +129,8 @@ export default function ProfileScreen() {
                     <Text style={st.menuSub}>{item.sub}</Text>
                   </View>
                   <View style={st.menuRight}>
-                    {item.badge ? (
-                      <View style={st.badge}><Text style={st.badgeText}>{item.badge}</Text></View>
+                    {item.id === '4' && unreadCount > 0 ? (
+                      <View style={st.badge}><Text style={st.badgeText}>{unreadCount}</Text></View>
                     ) : null}
                     <Text style={st.arrow}>›</Text>
                   </View>

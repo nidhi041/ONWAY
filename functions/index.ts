@@ -13,6 +13,27 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || '',
 });
 
+// Allowed origins — restrict CORS to known app origins
+const ALLOWED_ORIGINS = [
+  'https://onway-f5999.web.app',
+  'https://onway-f5999.firebaseapp.com',
+  // Expo Dev tools (development only)
+  'http://localhost:8081',
+  'http://localhost:19006',
+];
+
+const setCorsHeaders = (req: functions.https.Request, res: functions.Response) => {
+  const origin = req.headers.origin || '';
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+  } else {
+    // For mobile app (React Native), no origin header is sent — allow it
+    res.set('Access-Control-Allow-Origin', 'null');
+  }
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+};
+
 // Middleware to verify Firebase Auth token
 const verifyAuth = async (req: functions.https.Request, res: functions.Response) => {
   const authHeader = req.headers.authorization;
@@ -35,10 +56,7 @@ const verifyAuth = async (req: functions.https.Request, res: functions.Response)
  * Called from frontend checkout to create a Razorpay order
  */
 export const createRazorpayOrder = functions.https.onRequest(async (req, res) => {
-  // Enable CORS
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
@@ -104,9 +122,7 @@ export const createRazorpayOrder = functions.https.onRequest(async (req, res) =>
  * Called after successful Razorpay payment to verify signature and create order
  */
 export const verifyPaymentSignature = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
@@ -216,9 +232,7 @@ export const verifyPaymentSignature = functions.https.onRequest(async (req, res)
  * Called when payment fails to maintain audit trail
  */
 export const logPaymentFailure = functions.https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');

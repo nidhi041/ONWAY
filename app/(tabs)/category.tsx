@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     height: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.surface,
   },
   header: {
     flexDirection: 'row',
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: C.borderLight,
   },
   backButton: {
     fontSize: 24,
@@ -277,9 +277,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: C.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: C.borderLight,
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1a1a2e',
+    color: C.ink,
     minWidth: 60,
   },
   sortChips: {
@@ -320,9 +320,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: C.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: C.border,
   },
   sortChipActive: {
     backgroundColor: C.blue,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   sortChipText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#555',
+    color: C.inkSub,
   },
   sortChipTextActive: {
     color: 'white',
@@ -348,12 +348,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1a1a2e',
+    color: C.ink,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: '#999',
+    color: C.inkMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   productCard: {
     width: (SCREEN_WIDTH - 32 - 12) / 2,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.surface,
     borderRadius: 14,
     overflow: 'hidden',
     elevation: 2,
@@ -379,13 +379,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 3,
     borderWidth: 1,
-    borderColor: '#f5f5f5',
+    borderColor: C.borderLight,
   },
   imageContainer: {
     width: '100%',
     height: 160,
     position: 'relative',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: C.surfaceAlt,
   },
   productImage: {
     width: '100%',
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   },
   productBrand: {
     fontSize: 10,
-    color: '#999',
+    color: C.inkMuted,
     fontWeight: '700',
     marginBottom: 4,
     letterSpacing: 0.5,
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1a1a2e',
+    color: C.ink,
     marginBottom: 8,
     lineHeight: 16,
   },
@@ -434,17 +434,17 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#22C55E',
+    color: C.success,
   },
   originalPrice: {
     fontSize: 11,
-    color: '#ccc',
+    color: C.inkLight,
     textDecorationLine: 'line-through',
     fontWeight: '600',
   },
   taxText: {
     fontSize: 10,
-    color: '#999',
+    color: C.inkMuted,
     marginBottom: 8,
     fontWeight: '500',
   },
