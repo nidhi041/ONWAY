@@ -33,6 +33,137 @@ const TRUST_BADGES = [
   { icon: '🔒', label: 'Secure\nPayments' },
 ];
 
+const QUICK_ACTIONS = [
+  { id: 'pharmacy', name: 'Pharmacy', image: 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=150&auto=format&fit=crop&q=60', color: '#EFF6FF' },
+  { id: 'labs', name: 'Labtests', image: 'https://images.unsplash.com/photo-1579154204601-01588f35116f?w=150&auto=format&fit=crop&q=60', color: '#FFF1F2' },
+  { id: 'pet', name: 'Petcare', image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=150&auto=format&fit=crop&q=60', color: '#F0FDFA' },
+  { id: 'generics', name: 'Generics', image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=150&auto=format&fit=crop&q=60', color: '#FFFBEB' },
+];
+
+const SUMMER_ESSENTIALS = [
+  { name: 'Sunscreen', image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=150&auto=format&fit=crop&q=60', color: '#FFFBEB' },
+  { name: 'Face Wash', image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=150&auto=format&fit=crop&q=60', color: '#EFF6FF' },
+  { name: 'Lip Care', image: 'https://images.unsplash.com/photo-1617897903246-719242758050?w=150&auto=format&fit=crop&q=60', color: '#FFF1F2' },
+  { name: 'Hair Care', image: 'https://images.unsplash.com/photo-1527799822367-a05eb5747737?w=150&auto=format&fit=crop&q=60', color: '#FDF4FF' },
+  { name: 'Baby Care', image: 'https://images.unsplash.com/photo-1515488042361-404e9250afef?w=150&auto=format&fit=crop&q=60', color: '#F0FDFA' },
+  { name: 'Soap & Body wash', image: 'https://images.unsplash.com/photo-1607006342411-1a2816823afc?w=150&auto=format&fit=crop&q=60', color: '#EFF6FF' },
+];
+
+const POPULAR_CATEGORIES = [
+  { name: 'Personal Care', image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Home Care', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Baby Care', image: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Health Devices', image: 'https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Health Nutrition', image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Sexual Wellness', image: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Ayurveda Products', image: 'https://images.unsplash.com/photo-1611079830570-6874e40280eb?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Fitness', image: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Eye Care', image: 'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Skin Care', image: 'https://images.unsplash.com/photo-1608248597481-496100c80836?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Oral Care', image: 'https://images.unsplash.com/photo-1473232117216-c950d4ef2e14?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Stomach Care', image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Pain Relief', image: 'https://images.unsplash.com/photo-1550572017-edd951b55104?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Cold & Cough', image: 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Diabetes Care', image: 'https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Women Care', image: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=120&auto=format&fit=crop&q=60' },
+];
+
+const PET_FRIENDLY_FOODS: Product[] = [
+  {
+    id: 'pet_1',
+    name: 'Pedigree Adult Dry Dog Food - Chicken & Vegetables',
+    brand: 'PEDIGREE',
+    category: 'Pet Care',
+    price: 349,
+    originalPrice: 420,
+    rating: 4.8,
+    reviews: 120,
+    deliveryTime: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=300&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'pet_2',
+    name: 'Whiskas Adult Dry Cat Food - Mackerel',
+    brand: 'WHISKAS',
+    category: 'Pet Care',
+    price: 199,
+    originalPrice: 240,
+    rating: 4.7,
+    reviews: 95,
+    deliveryTime: 12,
+    imageUrl: 'https://images.unsplash.com/photo-1608454367599-c133fcabfb65?w=300&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'pet_3',
+    name: 'Royal Canin Mini Adult Dry Dog Food',
+    brand: 'ROYAL CANIN',
+    category: 'Pet Care',
+    price: 850,
+    originalPrice: 999,
+    rating: 4.9,
+    reviews: 80,
+    deliveryTime: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=300&auto=format&fit=crop&q=80',
+  },
+];
+
+const PET_CARE_CATEGORIES = [
+  { name: 'Dog Food', image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Cat Food', image: 'https://images.unsplash.com/photo-1569591159212-b02ea8a9f239?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Dog Accessories', image: 'https://images.unsplash.com/photo-1544568100-847a948585b9?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Cat Accessories', image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Pet Toys', image: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Pet Grooming', image: 'https://images.unsplash.com/photo-1516733725897-1aa73b87c8e8?w=120&auto=format&fit=crop&q=60' },
+];
+
+const BABY_CARE_ESSENTIALS = [
+  { name: 'Diapers & Wipes', image: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Baby Food', image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Baby Skin Care', image: 'https://images.unsplash.com/photo-1515488042361-404e9250afef?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Baby Bath', image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Baby Accessories', image: 'https://images.unsplash.com/photo-1522850959076-58d7c04f85e5?w=120&auto=format&fit=crop&q=60' },
+  { name: 'Feeding & Nursing', image: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=120&auto=format&fit=crop&q=60' },
+];
+
+const ADULT_DIAPERS: Product[] = [
+  {
+    id: 'diaper_1',
+    name: 'Friends Adult Diaper Easy - Medium',
+    brand: 'FRIENDS',
+    category: 'Personal Care',
+    price: 420,
+    originalPrice: 550,
+    rating: 4.6,
+    reviews: 140,
+    deliveryTime: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1522850959076-58d7c04f85e5?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    id: 'diaper_2',
+    name: 'Friends Premium Adult Diaper Pants - Large',
+    brand: 'FRIENDS',
+    category: 'Personal Care',
+    price: 510,
+    originalPrice: 650,
+    rating: 4.8,
+    reviews: 210,
+    deliveryTime: 12,
+    imageUrl: 'https://images.unsplash.com/photo-1522850959076-58d7c04f85e5?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    id: 'diaper_3',
+    name: 'Friends Classic Adult Diaper - XL',
+    brand: 'FRIENDS',
+    category: 'Personal Care',
+    price: 590,
+    originalPrice: 720,
+    rating: 4.7,
+    reviews: 88,
+    deliveryTime: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1522850959076-58d7c04f85e5?auto=format&fit=crop&w=300&q=80',
+  },
+];
+
 // ─── Category Chip ─────────────────────────────────────────────────────────────
 const CatChip = ({ item, onPress }: { item: typeof CATS[0]; onPress: () => void }) => (
   <TouchableOpacity style={[st.catChip, { backgroundColor: item.color }]} onPress={onPress} activeOpacity={0.75}>
@@ -181,6 +312,32 @@ export default function HomeScreen() {
           ))}
         </View>
 
+        {/* ── Quick Actions Row ── */}
+        <View style={st.quickActionsRow}>
+          {QUICK_ACTIONS.map(q => (
+            <TouchableOpacity key={q.id} style={st.quickActionItem} activeOpacity={0.75} onPress={() => router.push(`/(tabs)/category?name=Medicines`)}>
+              <View style={[st.quickActionCircle, { backgroundColor: q.color }]}>
+                <RNImage source={{ uri: q.image }} style={st.quickActionCircleImage} resizeMode="cover" />
+              </View>
+              <Text style={st.quickActionLabel}>{q.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── Prescription Upload Banner ── */}
+        <View style={st.prescriptionCard}>
+          <View style={st.prescriptionLeft}>
+            <Text style={st.prescriptionEmoji}>📋</Text>
+            <View style={st.prescriptionTexts}>
+              <Text style={st.prescriptionTitle}>Order with prescription</Text>
+              <Text style={st.prescriptionSub}>Upload & we'll search medicines for you</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={st.uploadBtn} activeOpacity={0.8} onPress={() => router.push('/profile')}>
+            <Text style={st.uploadBtnText}>Upload</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* ── Categories ── */}
         <View style={st.section}>
           <SectionHead title="Categories" />
@@ -215,6 +372,24 @@ export default function HomeScreen() {
           </ImageBackground>
         </View>
 
+        {/* ── Previously Ordered Items ── */}
+        <View style={st.section}>
+          <SectionHead
+            title="Previously ordered items"
+            onSeeAll={() => router.push('/(tabs)/category?name=Medicines')}
+          />
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={products.slice(0, 3)}
+            renderItem={({ item }) => (
+              <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
+            )}
+            keyExtractor={i => i.id}
+            contentContainerStyle={st.hList}
+          />
+        </View>
+
         {/* ── Trending ── */}
         <View style={st.section}>
           <SectionHead
@@ -243,6 +418,99 @@ export default function HomeScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             data={products.slice(Math.ceil(products.length / 2))}
+            renderItem={({ item }) => (
+              <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
+            )}
+            keyExtractor={i => i.id}
+            contentContainerStyle={st.hList}
+          />
+        </View>
+
+        {/* ── Summer Essentials ── */}
+        <View style={st.section}>
+          <View style={st.sectionHead}>
+            <View>
+              <Text style={st.sectionTitle}>Summer Essentials</Text>
+              <Text style={{ fontSize: 11, color: C.inkMuted, marginTop: 2 }}>A time to shine and protect more</Text>
+            </View>
+          </View>
+          <View style={st.summerGrid}>
+            {SUMMER_ESSENTIALS.map((s, index) => (
+              <TouchableOpacity key={index} style={[st.summerItem, { backgroundColor: s.color }]} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=Skin Care`)}>
+                <RNImage source={{ uri: s.image }} style={st.summerImage} resizeMode="cover" />
+                <Text style={st.summerLabel}>{s.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* ── Popular Categories ── */}
+        <View style={st.section}>
+          <SectionHead title="Popular categories" />
+          <View style={st.popularGrid}>
+            {POPULAR_CATEGORIES.map((c, index) => (
+              <TouchableOpacity key={index} style={st.popularItem} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=${c.name}`)}>
+                <View style={st.popularIconBox}>
+                  <RNImage source={{ uri: c.image }} style={st.popularImage} resizeMode="cover" />
+                </View>
+                <Text style={st.popularLabel} numberOfLines={2}>{c.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* ── Pet Friendly Foods ── */}
+        <View style={st.section}>
+          <SectionHead title="Pet Friendly Foods" onSeeAll={() => router.push('/(tabs)/category?name=Medicines')} />
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={PET_FRIENDLY_FOODS}
+            renderItem={({ item }) => (
+              <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
+            )}
+            keyExtractor={i => i.id}
+            contentContainerStyle={st.hList}
+          />
+        </View>
+
+        {/* ── Pet Care Categories ── */}
+        <View style={st.section}>
+          <SectionHead title="Pet Care Categories" />
+          <View style={st.popularGrid}>
+            {PET_CARE_CATEGORIES.map((c, index) => (
+              <TouchableOpacity key={index} style={st.popularItem} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=Medicines`)}>
+                <View style={st.popularIconBox}>
+                  <RNImage source={{ uri: c.image }} style={st.popularImage} resizeMode="cover" />
+                </View>
+                <Text style={st.popularLabel} numberOfLines={2}>{c.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* ── Baby Care Essentials ── */}
+        <View style={st.section}>
+          <SectionHead title="Baby Care Essentials" />
+          <View style={st.popularGrid}>
+            {BABY_CARE_ESSENTIALS.map((c, index) => (
+              <TouchableOpacity key={index} style={st.popularItem} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=Skin Care`)}>
+                <View style={st.popularIconBox}>
+                  <RNImage source={{ uri: c.image }} style={st.popularImage} resizeMode="cover" />
+                </View>
+                <Text style={st.popularLabel} numberOfLines={2}>{c.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* ── Friends Adult Diapers ── */}
+        <View style={st.section}>
+          <SectionHead title="Friends Adult Diapers (Min 15% Off)" onSeeAll={() => router.push('/(tabs)/category?name=Medicines')} />
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={ADULT_DIAPERS}
             renderItem={({ item }) => (
               <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
             )}
@@ -424,4 +692,146 @@ const st = StyleSheet.create({
   cartBarRight: { alignItems: 'flex-end' },
   cartBarPrice: { color: '#fff', fontSize: 16, fontWeight: '800' },
   cartBarCta: { color: C.teal, fontSize: 11, fontWeight: '700', marginTop: 2 },
+
+  // Quick Actions Row
+  quickActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    marginBottom: 20,
+  },
+  quickActionItem: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  quickActionCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+    overflow: 'hidden',
+  },
+  quickActionCircleImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  quickActionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.inkSub,
+  },
+
+  // Prescription Card
+  prescriptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  prescriptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  prescriptionEmoji: { fontSize: 26 },
+  prescriptionTexts: { flex: 1 },
+  prescriptionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#312E81',
+  },
+  prescriptionSub: {
+    fontSize: 11,
+    color: '#4F46E5',
+    marginTop: 2,
+  },
+  uploadBtn: {
+    backgroundColor: '#4F46E5',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  uploadBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  // Popular grid
+  popularGrid: {
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  popularItem: {
+    width: (W - 40 - 36) / 4,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  popularIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: C.surfaceAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: C.border,
+    overflow: 'hidden',
+  },
+  popularImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  popularLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: C.inkSub,
+    textAlign: 'center',
+  },
+
+  // Summer Grid
+  summerGrid: {
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  summerItem: {
+    width: (W - 40 - 24) / 3,
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+  },
+  summerImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    marginBottom: 4,
+  },
+  summerLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.inkSub,
+    textAlign: 'center',
+  },
 });
