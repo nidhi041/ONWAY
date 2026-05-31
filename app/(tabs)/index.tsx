@@ -33,6 +33,90 @@ const TRUST_BADGES = [
   { icon: '🔒', label: 'Secure\nPayments' },
 ];
 
+const QUICK_ACTIONS = [
+  { id: 'pharmacy', name: 'Pharmacy', emoji: '💊', color: '#EFF6FF' },
+  { id: 'labs', name: 'Labtests', emoji: '🔬', color: '#FFF1F2' },
+  { id: 'generics', name: 'Generics', emoji: '🩺', color: '#FFFBEB' },
+];
+
+const SUMMER_ESSENTIALS = [
+  { name: 'Sunscreen', emoji: '🧴', color: '#FFFBEB' },
+  { name: 'Face Wash', emoji: '🧼', color: '#EFF6FF' },
+  { name: 'Lip Care', emoji: '💄', color: '#FFF1F2' },
+  { name: 'Hair Care', emoji: '💇', color: '#FDF4FF' },
+  { name: 'Baby Care', emoji: '🍼', color: '#F0FDFA' },
+  { name: 'Soap & Body wash', emoji: '🚿', color: '#EFF6FF' },
+];
+
+const POPULAR_CATEGORIES = [
+  { name: 'Personal Care', emoji: '🧼' },
+  { name: 'Home Care', emoji: '🧹' },
+  { name: 'Baby Care', emoji: '🍼' },
+  { name: 'Health Devices', emoji: '🩺' },
+  { name: 'Health Nutrition', emoji: '🥗' },
+  { name: 'Sexual Wellness', emoji: '❤️' },
+  { name: 'Ayurveda Products', emoji: '🌿' },
+  { name: 'Fitness', emoji: '💪' },
+  { name: 'Eye Care', emoji: '👓' },
+  { name: 'Skin Care', emoji: '🧴' },
+  { name: 'Oral Care', emoji: '🪥' },
+  { name: 'Stomach Care', emoji: '🧪' },
+  { name: 'Pain Relief', emoji: '🩹' },
+  { name: 'Cold & Cough', emoji: '🤧' },
+  { name: 'Diabetes Care', emoji: '🩸' },
+  { name: 'Women Care', emoji: '👩' },
+];
+
+
+
+const BABY_CARE_ESSENTIALS = [
+  { name: 'Diapers & Wipes', emoji: '🧻' },
+  { name: 'Baby Food', emoji: '🍼' },
+  { name: 'Baby Skin Care', emoji: '🧴' },
+  { name: 'Baby Bath', emoji: '🚿' },
+  { name: 'Baby Accessories', emoji: '🧸' },
+  { name: 'Feeding & Nursing', emoji: '👶' },
+];
+
+const ADULT_DIAPERS: Product[] = [
+  {
+    id: 'diaper_1',
+    name: 'Friends Adult Diaper Easy - Medium',
+    brand: 'FRIENDS',
+    category: 'Personal Care',
+    price: 420,
+    originalPrice: 550,
+    rating: 4.6,
+    reviews: 140,
+    deliveryTime: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1522850959076-58d7c04f85e5?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    id: 'diaper_2',
+    name: 'Friends Premium Adult Diaper Pants - Large',
+    brand: 'FRIENDS',
+    category: 'Personal Care',
+    price: 510,
+    originalPrice: 650,
+    rating: 4.8,
+    reviews: 210,
+    deliveryTime: 12,
+    imageUrl: 'https://images.unsplash.com/photo-1522850959076-58d7c04f85e5?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    id: 'diaper_3',
+    name: 'Friends Classic Adult Diaper - XL',
+    brand: 'FRIENDS',
+    category: 'Personal Care',
+    price: 590,
+    originalPrice: 720,
+    rating: 4.7,
+    reviews: 88,
+    deliveryTime: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1522850959076-58d7c04f85e5?auto=format&fit=crop&w=300&q=80',
+  },
+];
+
 // ─── Category Chip ─────────────────────────────────────────────────────────────
 const CatChip = ({ item, onPress }: { item: typeof CATS[0]; onPress: () => void }) => (
   <TouchableOpacity style={[st.catChip, { backgroundColor: item.color }]} onPress={onPress} activeOpacity={0.75}>
@@ -181,6 +265,32 @@ export default function HomeScreen() {
           ))}
         </View>
 
+        {/* ── Quick Actions Row ── */}
+        <View style={st.quickActionsRow}>
+          {QUICK_ACTIONS.map(q => (
+            <TouchableOpacity key={q.id} style={st.quickActionItem} activeOpacity={0.75} onPress={() => router.push(`/(tabs)/category?name=Medicines`)}>
+              <View style={[st.quickActionCircle, { backgroundColor: q.color }]}>
+                <Text style={st.quickActionEmoji}>{q.emoji}</Text>
+              </View>
+              <Text style={st.quickActionLabel}>{q.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── Prescription Upload Banner ── */}
+        <View style={st.prescriptionCard}>
+          <View style={st.prescriptionLeft}>
+            <Text style={st.prescriptionEmoji}>📋</Text>
+            <View style={st.prescriptionTexts}>
+              <Text style={st.prescriptionTitle}>Order with prescription</Text>
+              <Text style={st.prescriptionSub}>Upload & we'll search medicines for you</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={st.uploadBtn} activeOpacity={0.8} onPress={() => router.push('/profile')}>
+            <Text style={st.uploadBtnText}>Upload</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* ── Categories ── */}
         <View style={st.section}>
           <SectionHead title="Categories" />
@@ -215,6 +325,24 @@ export default function HomeScreen() {
           </ImageBackground>
         </View>
 
+        {/* ── Previously Ordered Items ── */}
+        <View style={st.section}>
+          <SectionHead
+            title="Previously ordered items"
+            onSeeAll={() => router.push('/(tabs)/category?name=Medicines')}
+          />
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={products.slice(0, 3)}
+            renderItem={({ item }) => (
+              <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
+            )}
+            keyExtractor={i => i.id}
+            contentContainerStyle={st.hList}
+          />
+        </View>
+
         {/* ── Trending ── */}
         <View style={st.section}>
           <SectionHead
@@ -243,6 +371,71 @@ export default function HomeScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             data={products.slice(Math.ceil(products.length / 2))}
+            renderItem={({ item }) => (
+              <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
+            )}
+            keyExtractor={i => i.id}
+            contentContainerStyle={st.hList}
+          />
+        </View>
+
+        {/* ── Summer Essentials ── */}
+        <View style={st.section}>
+          <View style={st.sectionHead}>
+            <View>
+              <Text style={st.sectionTitle}>Summer Essentials</Text>
+              <Text style={{ fontSize: 11, color: C.inkMuted, marginTop: 2 }}>A time to shine and protect more</Text>
+            </View>
+          </View>
+          <View style={st.summerGrid}>
+            {SUMMER_ESSENTIALS.map((s, index) => (
+              <TouchableOpacity key={index} style={[st.summerItem, { backgroundColor: s.color }]} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=Skin Care`)}>
+                <Text style={st.summerEmoji}>{s.emoji}</Text>
+                <Text style={st.summerLabel}>{s.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* ── Popular Categories ── */}
+        <View style={st.section}>
+          <SectionHead title="Popular categories" />
+          <View style={st.popularGrid}>
+            {POPULAR_CATEGORIES.map((c, index) => (
+              <TouchableOpacity key={index} style={st.popularItem} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=${c.name}`)}>
+                <View style={st.popularIconBox}>
+                  <Text style={st.popularEmoji}>{c.emoji}</Text>
+                </View>
+                <Text style={st.popularLabel} numberOfLines={2}>{c.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+
+
+        {/* ── Baby Care Essentials ── */}
+        <View style={st.section}>
+          <SectionHead title="Baby Care Essentials" />
+          <View style={st.popularGrid}>
+            {BABY_CARE_ESSENTIALS.map((c, index) => (
+              <TouchableOpacity key={index} style={st.popularItem} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=Skin Care`)}>
+                <View style={st.popularIconBox}>
+                  <Text style={st.popularEmoji}>{c.emoji}</Text>
+                </View>
+                <Text style={st.popularLabel} numberOfLines={2}>{c.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* ── Friends Adult Diapers ── */}
+        <View style={st.section}>
+          <SectionHead title="Friends Adult Diapers (Min 15% Off)" onSeeAll={() => router.push('/(tabs)/category?name=Medicines')} />
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={ADULT_DIAPERS}
             renderItem={({ item }) => (
               <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
             )}
@@ -424,4 +617,131 @@ const st = StyleSheet.create({
   cartBarRight: { alignItems: 'flex-end' },
   cartBarPrice: { color: '#fff', fontSize: 16, fontWeight: '800' },
   cartBarCta: { color: C.teal, fontSize: 11, fontWeight: '700', marginTop: 2 },
+
+  // Quick Actions Row
+  quickActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    marginBottom: 20,
+  },
+  quickActionItem: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  quickActionCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+  },
+  quickActionEmoji: { fontSize: 28 },
+  quickActionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.inkSub,
+  },
+
+  // Prescription Card
+  prescriptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  prescriptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  prescriptionEmoji: { fontSize: 26 },
+  prescriptionTexts: { flex: 1 },
+  prescriptionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#312E81',
+  },
+  prescriptionSub: {
+    fontSize: 11,
+    color: '#4F46E5',
+    marginTop: 2,
+  },
+  uploadBtn: {
+    backgroundColor: '#4F46E5',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  uploadBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  // Popular grid
+  popularGrid: {
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  popularItem: {
+    width: (W - 40 - 36) / 4,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  popularIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: C.surfaceAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  popularEmoji: { fontSize: 24 },
+  popularLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: C.inkSub,
+    textAlign: 'center',
+  },
+
+  // Summer Grid
+  summerGrid: {
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  summerItem: {
+    width: (W - 40 - 24) / 3,
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+  },
+  summerEmoji: { fontSize: 24 },
+  summerLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.inkSub,
+    textAlign: 'center',
+  },
 });
