@@ -49,22 +49,24 @@ const SUMMER_ESSENTIALS = [
 ];
 
 const POPULAR_CATEGORIES = [
-  { name: 'Personal Care', emoji: '🧼' },
-  { name: 'Home Care', emoji: '🧹' },
-  { name: 'Baby Care', emoji: '🍼' },
-  { name: 'Health Devices', emoji: '🩺' },
-  { name: 'Health Nutrition', emoji: '🥗' },
-  { name: 'Sexual Wellness', emoji: '❤️' },
-  { name: 'Ayurveda Products', emoji: '🌿' },
-  { name: 'Fitness', emoji: '💪' },
-  { name: 'Eye Care', emoji: '👓' },
-  { name: 'Skin Care', emoji: '🧴' },
-  { name: 'Oral Care', emoji: '🪥' },
-  { name: 'Stomach Care', emoji: '🧪' },
-  { name: 'Pain Relief', emoji: '🩹' },
-  { name: 'Cold & Cough', emoji: '🤧' },
-  { name: 'Diabetes Care', emoji: '🩸' },
-  { name: 'Women Care', emoji: '👩' },
+  { name: 'Vitamins & Supplement', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343380/vitamin_and_Supplement_klycqd.png' },
+  { name: 'Homeopathic Medicine', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343380/Homeopethic_Medicine_fmjdmx.png' },
+  { name: 'Monitoring Devices', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343380/Monitoring_Machine_w69sr6.png' },
+  { name: 'Protein & Supplement', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343380/Protein_supplement_ifecyo.png' },
+  { name: 'Sexual Wellness', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343380/Sexual_Wllness_yja4b2.png' },
+  { name: 'Ayurvedic Wellness', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343379/Ayurvedic_wellness_yhmte4.png' },
+  { name: 'Food & Nutrition', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343379/Food_Nutrition_zoiwxs.png' },
+  { name: 'Skin Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343378/Skin_care_tkymi7.png' },
+  { name: 'Men Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343379/Men_care_ayw1gi.png' },
+  { name: 'Women Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343378/Women_care_oxzizi.png' },
+  { name: 'Pain Relief', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343378/Pain_relief_onmg1v.png' },
+  { name: 'Hair Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/Hair_care_h71ylm.png' },
+  { name: 'Oral Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/Oral_care_flpymq.png' },
+  { name: 'Cold Cough & Fever', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343378/Cold_cough_and_fever_wyhbga.png' },
+  { name: 'First Aid', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/First_aid_irbcod.png' },
+  { name: 'Mental Wellness', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/Mental_Wellness_dudcml.png' },
+  { name: 'Baby Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/Baby_care_gddibb.png' },
+  { name: 'Respiratory Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/Respiratory_Care_zx610s.png' },
 ];
 
 
@@ -404,7 +406,7 @@ export default function HomeScreen() {
             {POPULAR_CATEGORIES.map((c, index) => (
               <TouchableOpacity key={index} style={st.popularItem} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=${c.name}`)}>
                 <View style={st.popularIconBox}>
-                  <Text style={st.popularEmoji}>{c.emoji}</Text>
+                  <RNImage source={{ uri: c.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 </View>
                 <Text style={st.popularLabel} numberOfLines={2}>{c.name}</Text>
               </TouchableOpacity>
@@ -704,13 +706,14 @@ const st = StyleSheet.create({
   popularIconBox: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: 12,
     backgroundColor: C.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
     borderWidth: 1,
     borderColor: C.border,
+    overflow: 'hidden',
   },
   popularEmoji: { fontSize: 24 },
   popularLabel: {
