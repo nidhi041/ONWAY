@@ -19,12 +19,12 @@ const W = Dimensions.get('window').width;
 const CARD_W = (W - 40 - 12) / 2;
 
 const CATS = [
-  { id: '1', name: 'Medicines',   emoji: '💊', color: '#EFF6FF', filterName: 'Medicines' },
-  { id: '2', name: 'First Aid',   emoji: '🩹', color: '#FFF1F2', filterName: 'First Aid' },
-  { id: '3', name: 'Vitamins',    emoji: '🧴', color: '#F0FDFA', filterName: 'Vitamins' },
-  { id: '4', name: 'Pain Relief', emoji: '🩺', color: '#FFFBEB', filterName: 'Pain Relief' },
-  { id: '5', name: 'Cold & Flu',  emoji: '🤧', color: '#EFF6FF', filterName: 'Cold & Flu' },
-  { id: '6', name: 'Skin Care',   emoji: '🧼', color: '#FDF4FF', filterName: 'Skin Care' },
+  { id: '1', name: 'Medicines',   imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780499501/Medicine_k7pp4c.png', color: '#EFF6FF', filterName: 'Medicines' },
+  { id: '2', name: 'First Aid',   imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/First_aid_irbcod.png', color: '#FFF1F2', filterName: 'First Aid' },
+  { id: '3', name: 'Vitamins',    imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343380/Protein_supplement_ifecyo.png', color: '#F0FDFA', filterName: 'Vitamins' },
+  { id: '4', name: 'Pain Relief', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343378/Pain_relief_onmg1v.png', color: '#FFFBEB', filterName: 'Pain Relief' },
+  { id: '5', name: 'Cold & Flu',  imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343378/Cold_cough_and_fever_wyhbga.png', color: '#EFF6FF', filterName: 'Cold & Flu' },
+  { id: '6', name: 'Skin Care',   imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343378/Skin_care_tkymi7.png', color: '#FDF4FF', filterName: 'Skin Care' },
 ];
 
 const TRUST_BADGES = [
@@ -34,18 +34,18 @@ const TRUST_BADGES = [
 ];
 
 const QUICK_ACTIONS = [
-  { id: 'pharmacy', name: 'Pharmacy', emoji: '💊', color: '#EFF6FF' },
-  { id: 'labs', name: 'Labtests', emoji: '🔬', color: '#FFF1F2' },
-  { id: 'generics', name: 'Generics', emoji: '🩺', color: '#FFFBEB' },
+  { id: 'pharmacy', name: 'Pharmacy', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780499501/Pharmacy_aqzjdn.png', color: '#EFF6FF' },
+  { id: 'labs', name: 'Labtests', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780499500/Labtests_lfuwwl.png', color: '#FFF1F2' },
+  { id: 'consultant', name: 'Consultant', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780499499/Consultent_gtnvvc.png', color: '#FFFBEB' },
 ];
 
 const SUMMER_ESSENTIALS = [
-  { name: 'Sunscreen', emoji: '🧴', color: '#FFFBEB' },
-  { name: 'Face Wash', emoji: '🧼', color: '#EFF6FF' },
-  { name: 'Lip Care', emoji: '💄', color: '#FFF1F2' },
-  { name: 'Hair Care', emoji: '💇', color: '#FDF4FF' },
-  { name: 'Baby Care', emoji: '🍼', color: '#F0FDFA' },
-  { name: 'Soap & Body wash', emoji: '🚿', color: '#EFF6FF' },
+  { name: 'Sunscreen', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780499499/sunscreen_axxso3.png', color: '#FFFBEB' },
+  { name: 'Face Wash', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780499499/facewash_bivdu5.png', color: '#EFF6FF' },
+  { name: 'Lip Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780499500/lip_care_uhghcp.png', color: '#FFF1F2' },
+  { name: 'Hair Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/Hair_care_h71ylm.png', color: '#FDF4FF' },
+  { name: 'Baby Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/Baby_care_gddibb.png', color: '#F0FDFA' },
+  { name: 'Soap & Body wash', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780499500/soap_and_body_wash_pvhjym.png', color: '#EFF6FF' },
 ];
 
 const POPULAR_CATEGORIES = [
@@ -72,12 +72,12 @@ const POPULAR_CATEGORIES = [
 
 
 const BABY_CARE_ESSENTIALS = [
-  { name: 'Diapers & Wipes', emoji: '🧻' },
-  { name: 'Baby Food', emoji: '🍼' },
-  { name: 'Baby Skin Care', emoji: '🧴' },
-  { name: 'Baby Bath', emoji: '🚿' },
-  { name: 'Baby Accessories', emoji: '🧸' },
-  { name: 'Feeding & Nursing', emoji: '👶' },
+  { name: 'Diapers & Wipes', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780501271/Diapers_and_Wipes_vvtayk.png' },
+  { name: 'Baby Food', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780501272/Baby_Food_vlij9g.png' },
+  { name: 'Baby Skin Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780501272/Baby_skin_care_w1z1wj.png' },
+  { name: 'Baby Bath', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780501271/Baby_Bath_ku7d8j.png' },
+  { name: 'Baby Accessories', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780501272/Baby_Accessories_ycugnf.png' },
+  { name: 'Feeding & Nursing', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780501271/Feeding_Nurising_xtgvem.png' },
 ];
 
 const ADULT_DIAPERS: Product[] = [
@@ -121,8 +121,10 @@ const ADULT_DIAPERS: Product[] = [
 
 // ─── Category Chip ─────────────────────────────────────────────────────────────
 const CatChip = ({ item, onPress }: { item: typeof CATS[0]; onPress: () => void }) => (
-  <TouchableOpacity style={[st.catChip, { backgroundColor: item.color }]} onPress={onPress} activeOpacity={0.75}>
-    <Text style={st.catEmoji}>{item.emoji}</Text>
+  <TouchableOpacity style={st.catChipContainer} onPress={onPress} activeOpacity={0.75}>
+    <View style={[st.catChipBox, { backgroundColor: item.color }]}>
+      <RNImage source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+    </View>
     <Text style={st.catName}>{item.name}</Text>
   </TouchableOpacity>
 );
@@ -271,8 +273,8 @@ export default function HomeScreen() {
         <View style={st.quickActionsRow}>
           {QUICK_ACTIONS.map(q => (
             <TouchableOpacity key={q.id} style={st.quickActionItem} activeOpacity={0.75} onPress={() => router.push(`/(tabs)/category?name=Medicines`)}>
-              <View style={[st.quickActionCircle, { backgroundColor: q.color }]}>
-                <Text style={st.quickActionEmoji}>{q.emoji}</Text>
+              <View style={[st.quickActionBox, { backgroundColor: q.color, overflow: 'hidden' }]}>
+                <RNImage source={{ uri: q.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               </View>
               <Text style={st.quickActionLabel}>{q.name}</Text>
             </TouchableOpacity>
@@ -391,8 +393,10 @@ export default function HomeScreen() {
           </View>
           <View style={st.summerGrid}>
             {SUMMER_ESSENTIALS.map((s, index) => (
-              <TouchableOpacity key={index} style={[st.summerItem, { backgroundColor: s.color }]} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=Skin Care`)}>
-                <Text style={st.summerEmoji}>{s.emoji}</Text>
+              <TouchableOpacity key={index} style={st.summerItemContainer} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=Skin Care`)}>
+                <View style={[st.summerItemBox, { backgroundColor: s.color }]}>
+                  <RNImage source={{ uri: s.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                </View>
                 <Text style={st.summerLabel}>{s.name}</Text>
               </TouchableOpacity>
             ))}
@@ -421,9 +425,9 @@ export default function HomeScreen() {
           <SectionHead title="Baby Care Essentials" />
           <View style={st.popularGrid}>
             {BABY_CARE_ESSENTIALS.map((c, index) => (
-              <TouchableOpacity key={index} style={st.popularItem} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=Skin Care`)}>
+              <TouchableOpacity key={index} style={st.popularItem} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=${c.name}`)}>
                 <View style={st.popularIconBox}>
-                  <Text style={st.popularEmoji}>{c.emoji}</Text>
+                  <RNImage source={{ uri: c.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 </View>
                 <Text style={st.popularLabel} numberOfLines={2}>{c.name}</Text>
               </TouchableOpacity>
@@ -537,11 +541,21 @@ const st = StyleSheet.create({
 
   // categories
   catRow: { paddingHorizontal: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  catChip: {
+  catChipContainer: {
     width: (W - 40 - 24) / 3,
-    alignItems: 'center', borderRadius: 16,
-    paddingHorizontal: 8, paddingVertical: 14, gap: 8,
-    borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  catChipBox: {
+    width: '100%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+    overflow: 'hidden',
   },
   catEmoji: { fontSize: 22 },
   catName: { fontSize: 11, color: C.inkSub, fontWeight: '600', textAlign: 'center' },
@@ -631,10 +645,10 @@ const st = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  quickActionCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  quickActionBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -730,15 +744,21 @@ const st = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
-  summerItem: {
+  summerItemContainer: {
     width: (W - 40 - 24) / 3,
     alignItems: 'center',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
     gap: 8,
+    marginBottom: 4,
+  },
+  summerItemBox: {
+    width: '100%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.03)',
+    overflow: 'hidden',
   },
   summerEmoji: { fontSize: 24 },
   summerLabel: {

@@ -21,7 +21,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "scheme": "onway"
+      "scheme": "onway",
+      "package": "com.arunkumar6684.OnWay"
     },
     "web": {
       "output": "static",
@@ -46,6 +47,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4f289bbc-66f1-4db2-a2d7-738702e2f01f"
+      }
     }
   }
 }

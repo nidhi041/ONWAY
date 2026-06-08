@@ -1,8 +1,10 @@
 import { auth } from '@/config/firebase';
 import { Product } from '@/constants/products';
 import { addToCartDB, clearCartDB, listenToCart, removeFromCartDB, updateCartQuantityDB } from '@/services/cartService';
+import { router } from 'expo-router';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 
 export interface CartItem {
   id: string;
@@ -81,7 +83,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const addToCart = async (product: Product) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      Alert.alert(
+        'Login Required',
+        'Please login to add items to your cart.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Login', onPress: () => router.push('/login') }
+        ]
+      );
+      return;
+    }
 
     try {
       const existingItem = cartItems.find((item) => item.id === product.id);
