@@ -80,22 +80,34 @@ export default function SearchScreen() {
     }
     // Debounce 300ms — only search after user stops typing
     debounceRef.current = setTimeout(() => {
-      setResults(allProducts.filter(p =>
-        p.name.toLowerCase().includes(text.toLowerCase()) ||
-        p.brand?.toLowerCase().includes(text.toLowerCase()) ||
-        p.category.toLowerCase().includes(text.toLowerCase())
-      ));
+      setResults(allProducts.filter(p => {
+        const categoryMatch = Array.isArray(p.category) 
+          ? p.category.some(c => c.toLowerCase().includes(text.toLowerCase()))
+          : (p.category && p.category.toLowerCase().includes(text.toLowerCase()))
+
+        return (
+          p.name.toLowerCase().includes(text.toLowerCase()) ||
+          (p.brand && p.brand.toLowerCase().includes(text.toLowerCase())) ||
+          categoryMatch
+        );
+      }));
     }, 300);
   }, [allProducts]);
 
   const selectSuggestion = useCallback((text: string) => {
     setQuery(text);
     saveRecent(text);
-    setResults(allProducts.filter(p =>
-      p.name.toLowerCase().includes(text.toLowerCase()) ||
-      p.brand?.toLowerCase().includes(text.toLowerCase()) ||
-      p.category.toLowerCase().includes(text.toLowerCase())
-    ));
+    setResults(allProducts.filter(p => {
+      const categoryMatch = Array.isArray(p.category)
+        ? p.category.some(c => c.toLowerCase().includes(text.toLowerCase()))
+        : (p.category && p.category.toLowerCase().includes(text.toLowerCase()))
+
+      return (
+        p.name.toLowerCase().includes(text.toLowerCase()) ||
+        (p.brand && p.brand.toLowerCase().includes(text.toLowerCase())) ||
+        categoryMatch
+      );
+    }));
   }, [allProducts, saveRecent]);
 
   const ResultCard = ({ product }: { product: Product }) => (

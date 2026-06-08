@@ -12,6 +12,37 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const InputField = ({
+  label, icon, value, onChange, placeholder,
+  keyboard = 'default' as any, secure = false,
+  showToggle = false, onToggle = () => {}, error = '',
+  loading = false,
+}: any) => (
+  <View style={st.field}>
+    <Text style={st.label}>{label}</Text>
+    <View style={[st.inputBox, error && st.inputBoxError]}>
+      <Text style={st.inputIcon}>{icon}</Text>
+      <TextInput
+        style={st.input}
+        placeholder={placeholder}
+        placeholderTextColor={C.inkMuted}
+        value={value}
+        onChangeText={onChange}
+        keyboardType={keyboard}
+        secureTextEntry={secure}
+        autoCapitalize={keyboard === 'email-address' ? 'none' : 'words'}
+        editable={!loading}
+      />
+      {showToggle && (
+        <TouchableOpacity onPress={onToggle} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={st.eyeIcon}>{secure ? '👁‍🗨' : '👁'}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+    {error ? <Text style={st.errText}>{error}</Text> : null}
+  </View>
+);
+
 export default function SignupScreen() {
   const router = useRouter();
   const { signup, loginWithGoogle } = useAuth();
@@ -92,36 +123,6 @@ export default function SignupScreen() {
     finally { setLoading(false); }
   };
 
-  const InputField = ({
-    label, icon, value, onChange, placeholder,
-    keyboard = 'default' as any, secure = false,
-    showToggle = false, onToggle = () => {}, error = '',
-  }: any) => (
-    <View style={st.field}>
-      <Text style={st.label}>{label}</Text>
-      <View style={[st.inputBox, error && st.inputBoxError]}>
-        <Text style={st.inputIcon}>{icon}</Text>
-        <TextInput
-          style={st.input}
-          placeholder={placeholder}
-          placeholderTextColor={C.inkMuted}
-          value={value}
-          onChangeText={onChange}
-          keyboardType={keyboard}
-          secureTextEntry={secure}
-          autoCapitalize={keyboard === 'email-address' ? 'none' : 'words'}
-          editable={!loading}
-        />
-        {showToggle && (
-          <TouchableOpacity onPress={onToggle} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={st.eyeIcon}>{secure ? '👁‍🗨' : '👁'}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      {error ? <Text style={st.errText}>{error}</Text> : null}
-    </View>
-  );
-
   return (
     <SafeAreaView style={st.container}>
       <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
@@ -144,10 +145,10 @@ export default function SignupScreen() {
             <Text style={st.cardTitle}>Create account</Text>
             <Text style={st.cardSub}>Join thousands getting healthcare delivered fast</Text>
 
-            <InputField label="Full Name" icon="👤" value={name} onChange={(t: string) => { setName(t); clr('name'); }} placeholder="Your full name" error={errors.name} />
-            <InputField label="Email Address" icon="✉️" value={email} onChange={(t: string) => { setEmail(t); clr('email'); }} placeholder="you@example.com" keyboard="email-address" error={errors.email} />
-            <InputField label="Phone Number" icon="📱" value={phone} onChange={(t: string) => { setPhone(t); clr('phone'); }} placeholder="10-digit mobile number" keyboard="phone-pad" error={errors.phone} />
-            <InputField label="Password" icon="🔒" value={password} onChange={(t: string) => { setPassword(t); clr('password'); }} placeholder="Minimum 6 characters" secure={!showPw} showToggle onToggle={() => setShowPw(!showPw)} error={errors.password} />
+            <InputField label="Full Name" icon="👤" value={name} onChange={(t: string) => { setName(t); clr('name'); }} placeholder="Your full name" error={errors.name} loading={loading} />
+            <InputField label="Email Address" icon="✉️" value={email} onChange={(t: string) => { setEmail(t); clr('email'); }} placeholder="you@example.com" keyboard="email-address" error={errors.email} loading={loading} />
+            <InputField label="Phone Number" icon="📱" value={phone} onChange={(t: string) => { setPhone(t); clr('phone'); }} placeholder="10-digit mobile number" keyboard="phone-pad" error={errors.phone} loading={loading} />
+            <InputField label="Password" icon="🔒" value={password} onChange={(t: string) => { setPassword(t); clr('password'); }} placeholder="Minimum 6 characters" secure={!showPw} showToggle onToggle={() => setShowPw(!showPw)} error={errors.password} loading={loading} />
             {password.length > 0 && (
               <View style={st.strengthContainer}>
                 <View style={st.strengthBars}>
@@ -164,7 +165,7 @@ export default function SignupScreen() {
                 <Text style={[st.strengthLabel, { color: pwStrength.color }]}>{pwStrength.label}</Text>
               </View>
             )}
-            <InputField label="Confirm Password" icon="🔒" value={confirm} onChange={(t: string) => { setConfirm(t); clr('confirm'); }} placeholder="Repeat your password" secure={!showCpw} showToggle onToggle={() => setShowCpw(!showCpw)} error={errors.confirm} />
+            <InputField label="Confirm Password" icon="🔒" value={confirm} onChange={(t: string) => { setConfirm(t); clr('confirm'); }} placeholder="Repeat your password" secure={!showCpw} showToggle onToggle={() => setShowCpw(!showCpw)} error={errors.confirm} loading={loading} />
 
             {/* Terms */}
             <TouchableOpacity style={st.termsRow} onPress={() => { setAgreed(!agreed); clr('terms'); }} disabled={loading} activeOpacity={0.75}>

@@ -61,10 +61,13 @@ export default function CategoryScreen() {
     // Use Firestore products directly
     const source = firestoreProducts;
 
-    // Exact case-insensitive match on category
-    let filtered = source.filter(
-      (p) => p.category.toLowerCase() === categoryName.toLowerCase()
-    );
+    // Exact case-insensitive match on category (handle both string and array)
+    let filtered = firestoreProducts.filter((p) => {
+      if (Array.isArray(p.category)) {
+        return p.category.some(c => c.toLowerCase() === categoryName.toLowerCase())
+      }
+      return p.category && p.category.toLowerCase() === categoryName.toLowerCase()
+    });
 
     // Apply filter chips
     if (activeFilter === 'price-low-high') {
