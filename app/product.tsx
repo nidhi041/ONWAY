@@ -249,7 +249,7 @@ const st = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6, zIndex: 1,
   },
   deliveryBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  productImg: { width: '72%', height: '78%' },
+  productImg: { width: '100%', height: '100%' },
 
   infoSection: { padding: 20 },
   brand: { fontSize: 11, color: C.blue, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 },

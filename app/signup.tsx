@@ -138,7 +138,7 @@ export default function SignupScreen() {
               <View style={st.brandDot} />
               <Text style={st.brandIcon}>⚡</Text>
             </View>
-            <Text style={st.brandName}>OnWay</Text>
+            <Text style={st.brandName}>MedBix</Text>
           </View>
 
           <View style={st.card}>

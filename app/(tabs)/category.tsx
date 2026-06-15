@@ -9,25 +9,26 @@ import {
     ActivityIndicator,
     Dimensions,
     FlatList,
-    Image as RNImage,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
+import { Image } from 'expo-image';
+import React from 'react';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 type SortOption = 'popularity' | 'price-low' | 'price-high' | 'rating';
 type FilterOption = 'all' | 'price-low-high' | 'rating-40' | 'fast-deliver';
 
-const ProductCard = ({ product, onPress }: { product: Product; onPress?: () => void }) => {
+const ProductCard = React.memo(({ product, onPress }: { product: Product; onPress?: () => void }) => {
   const imageSource = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/images/medicine.png');
   return (
     <TouchableOpacity style={styles.productCard} onPress={onPress}>
       <View style={styles.imageContainer}>
-        <RNImage source={imageSource} style={styles.productImage} resizeMode="cover" />
+        <Image source={imageSource} style={styles.productImage} contentFit="cover" cachePolicy="memory-disk" transition={200} />
         <View style={styles.ratingBadge}>
           <Text style={styles.ratingBadgeText}>⭐ {product.rating}</Text>
         </View>
@@ -46,32 +47,24 @@ const ProductCard = ({ product, onPress }: { product: Product; onPress?: () => v
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 export default function CategoryScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const categoryName = (params.name as string) || 'Medicines';
-  const { products: firestoreProducts, loading } = useProducts();
+  const { products: firestoreProducts, loading } = useProducts(categoryName);
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all');
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    // Use Firestore products directly
-    const source = firestoreProducts;
-
-    // Exact case-insensitive match on category (handle both string and array)
-    let filtered = firestoreProducts.filter((p) => {
-      if (Array.isArray(p.category)) {
-        return p.category.some(c => c.toLowerCase() === categoryName.toLowerCase())
-      }
-      return p.category && p.category.toLowerCase() === categoryName.toLowerCase()
-    });
+    // Products are already filtered by category from Firestore via array-contains
+    let filtered = [...firestoreProducts];
 
     // Apply filter chips
     if (activeFilter === 'price-low-high') {
-      filtered = [...filtered].sort((a, b) => a.price - b.price);
+      filtered.sort((a, b) => a.price - b.price);
     } else if (activeFilter === 'rating-40') {
       filtered = filtered.filter((p) => p.rating >= 4.0);
     } else if (activeFilter === 'fast-deliver') {
@@ -80,15 +73,15 @@ export default function CategoryScreen() {
 
     // Apply sort
     if (sortBy === 'price-low') {
-      filtered = [...filtered].sort((a, b) => a.price - b.price);
+      filtered.sort((a, b) => a.price - b.price);
     } else if (sortBy === 'price-high') {
-      filtered = [...filtered].sort((a, b) => b.price - a.price);
+      filtered.sort((a, b) => b.price - a.price);
     } else if (sortBy === 'rating') {
-      filtered = [...filtered].sort((a, b) => b.rating - a.rating);
+      filtered.sort((a, b) => b.rating - a.rating);
     }
 
     setProducts(filtered);
-  }, [firestoreProducts, categoryName, activeFilter, sortBy]);
+  }, [firestoreProducts, activeFilter, sortBy]);
 
   const filterOptions: FilterOption[] = ['all', 'price-low-high', 'rating-40', 'fast-deliver'];
   const filterLabels: Record<FilterOption, string> = {
@@ -106,6 +99,76 @@ export default function CategoryScreen() {
     rating: 'Highest Rated',
   };
 
+  const ListHeader = () => (
+    <>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backButton}>{'<'}</Text>
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: Colors.light.text }]}>
+          {categoryName}
+        </Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filtersScroll}
+        contentContainerStyle={styles.filtersContent}
+      >
+        {filterOptions.map((filter) => (
+          <TouchableOpacity
+            key={filter}
+            style={[
+              styles.filterChip,
+              activeFilter === filter && styles.filterChipActive,
+            ]}
+            onPress={() => setActiveFilter(filter)}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                activeFilter === filter && styles.filterChipTextActive,
+              ]}
+            >
+              {filterLabels[filter]}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <View style={styles.metaRow}>
+        <Text style={[styles.countText, { color: Colors.light.text }]}>
+          {products.length} {products.length === 1 ? 'item' : 'items'}
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortChips}>
+          {sortOptions.map((opt) => (
+            <TouchableOpacity
+              key={opt}
+              style={[styles.sortChip, sortBy === opt && styles.sortChipActive]}
+              onPress={() => setSortBy(opt)}
+            >
+              <Text style={[styles.sortChipText, sortBy === opt && styles.sortChipTextActive]}>
+                {sortLabels[opt]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    </>
+  );
+
+  const ListEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyEmoji}>🔍</Text>
+      <Text style={styles.emptyTitle}>No products found</Text>
+      <Text style={styles.emptySubtitle}>
+        No items in "{categoryName}" match the selected filters.
+      </Text>
+    </View>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
       <View style={styles.topBar} />
@@ -113,7 +176,7 @@ export default function CategoryScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.grid}>
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <View key={i} style={[styles.productCard, { padding: 12, borderWidth: 1, borderColor: '#f1f5f9' }]}>
+              <View key={i} style={[styles.productCard, { padding: 12, borderWidth: 1, borderColor: '#f1f5f9' }]} >
                 <Skeleton style={{ width: '100%', height: 120, borderRadius: 12, marginBottom: 12 }} />
                 <Skeleton style={{ width: '80%', height: 14, marginBottom: 8 }} />
                 <Skeleton style={{ width: '40%', height: 12, marginBottom: 12 }} />
@@ -123,99 +186,27 @@ export default function CategoryScreen() {
           </View>
         </ScrollView>
       ) : (
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.backButton}>{'<'}</Text>
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: Colors.light.text }]}>
-              {categoryName}
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          {/* Filter Chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.filtersScroll}
-            contentContainerStyle={styles.filtersContent}
-          >
-            {filterOptions.map((filter) => (
-              <TouchableOpacity
-                key={filter}
-                style={[
-                  styles.filterChip,
-                  activeFilter === filter && styles.filterChipActive,
-                ]}
-                onPress={() => setActiveFilter(filter)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    activeFilter === filter && styles.filterChipTextActive,
-                  ]}
-                >
-                  {filterLabels[filter]}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Count + Sort row */}
-          <View style={styles.metaRow}>
-            <Text style={[styles.countText, { color: Colors.light.text }]}>
-              {products.length} {products.length === 1 ? 'item' : 'items'}
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortChips}>
-              {sortOptions.map((opt) => (
-                <TouchableOpacity
-                  key={opt}
-                  style={[styles.sortChip, sortBy === opt && styles.sortChipActive]}
-                  onPress={() => setSortBy(opt)}
-                >
-                  <Text style={[styles.sortChipText, sortBy === opt && styles.sortChipTextActive]}>
-                    {sortLabels[opt]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Empty state */}
-          {products.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>🔍</Text>
-              <Text style={styles.emptyTitle}>No products found</Text>
-              <Text style={styles.emptySubtitle}>
-                No items in "{categoryName}" match the selected filters.
-              </Text>
-            </View>
+        <FlatList
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          data={products}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={ListEmpty}
+          renderItem={({ item }) => (
+            <ProductCard
+              product={item}
+              onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
+            />
           )}
-
-          {/* Product Grid */}
-          {products.length > 0 && (
-            <View style={styles.gridContainer}>
-              <FlatList
-                data={products}
-                renderItem={({ item }) => (
-                  <ProductCard
-                    product={item}
-                    onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)}
-                  />
-                )}
-                keyExtractor={(item) => item.id}
-                numColumns={2}
-                columnWrapperStyle={styles.gridRow}
-                scrollEnabled={false}
-                contentContainerStyle={styles.gridContent}
-              />
-            </View>
-          )}
-
-          <View style={styles.bottomSpacer} />
-        </ScrollView>
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
+          contentContainerStyle={{ paddingBottom: 30 }}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={5}
+          removeClippedSubviews={true}
+        />
       )}
     </View>
   );
@@ -370,6 +361,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
     marginBottom: 12,
+    paddingHorizontal: 16,
   },
   productCard: {
     width: (SCREEN_WIDTH - 32 - 12) / 2,

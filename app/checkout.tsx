@@ -62,13 +62,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
     badge: 'Secure',
     icon: '💳',
   },
-  {
-    id: 'cod',
-    type: 'cod',
-    title: 'COD',
-    description: 'Cash on Delivery',
-    icon: '💵',
-  },
+
   {
     id: 'netbanking',
     type: 'netbanking',
@@ -172,7 +166,7 @@ export default function CheckoutScreen() {
 
   // Calculate totals from cart items
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const deliveryFee = 0; // Free delivery
+  const deliveryFee = 100; // Flat delivery fee
   const tax = Math.round(subtotal * 0.165 * 100) / 100; // 16.5% tax
   const totalAmount = subtotal + deliveryFee + tax;
 
@@ -461,12 +455,7 @@ export default function CheckoutScreen() {
 
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Delivery Fee</Text>
-            <View style={styles.deliveryFeeRow}>
-              <Text style={styles.deliveryFeeStrike}>₹40.00</Text>
-              <View style={styles.freePill}>
-                <Text style={styles.freePillText}>FREE</Text>
-              </View>
-            </View>
+            <Text style={styles.summaryValue}>₹{deliveryFee.toFixed(2)}</Text>
           </View>
 
           <View style={styles.summaryRow}>
@@ -486,7 +475,7 @@ export default function CheckoutScreen() {
         <View style={styles.securityBox}>
           <Text style={styles.securityIcon}>🛡️</Text>
           <View style={styles.securityContent}>
-            <Text style={styles.securityTitle}>Onway Secure Checkout</Text>
+            <Text style={styles.securityTitle}>MedBix Secure Checkout</Text>
             <Text style={styles.securityText}>
               Your payment details are encrypted and 100% secure.
             </Text>
