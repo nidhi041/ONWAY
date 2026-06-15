@@ -84,14 +84,15 @@ export default function CartScreen() {
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
   // Real coupon codes with meaningful discounts
   const VALID_COUPONS: Record<string, number> = {
-    'ONWAY10': Math.round(subtotal * 0.10 * 100) / 100,
-    'ONWAY20': Math.round(subtotal * 0.20 * 100) / 100,
+    'MEDBIX10': Math.round(subtotal * 0.10 * 100) / 100,
+    'MEDBIX20': Math.round(subtotal * 0.20 * 100) / 100,
     'FLAT50': subtotal >= 200 ? 50 : 0,
     'HEALTH15': Math.round(subtotal * 0.15 * 100) / 100,
   };
   const [couponError, setCouponError] = useState('');
   const discount = couponApplied ? (VALID_COUPONS[coupon.trim().toUpperCase()] ?? 0) : 0;
-  const total    = subtotal - discount;
+  const deliveryCharge = 100;
+  const total    = subtotal - discount + deliveryCharge;
 
   return (
     <SafeAreaView style={st.container} edges={['top']}>
@@ -154,7 +155,7 @@ export default function CartScreen() {
                 <Text style={st.couponIcon}>🎟️</Text>
                 <TextInput
                   style={st.couponInput}
-                  placeholder="Enter code (e.g. ONWAY30)"
+                  placeholder="Enter code (e.g. MEDBIX30)"
                   placeholderTextColor={C.inkMuted}
                   value={coupon}
                   onChangeText={setCoupon}
@@ -166,7 +167,7 @@ export default function CartScreen() {
                     const code = coupon.trim().toUpperCase();
                     if (!code) { setCouponError('Please enter a coupon code'); return; }
                     const VALID_COUPONS_CHECK: Record<string, boolean> = {
-                      'ONWAY10': true, 'ONWAY20': true, 'FLAT50': true, 'HEALTH15': true,
+                      'MEDBIX10': true, 'MEDBIX20': true, 'FLAT50': true, 'HEALTH15': true,
                     };
                     if (couponApplied) {
                       setCouponApplied(false); setCouponError('');
@@ -177,7 +178,7 @@ export default function CartScreen() {
                         setCouponApplied(true); setCouponError('');
                       }
                     } else {
-                      setCouponError('Invalid coupon code. Try ONWAY10, ONWAY20, or FLAT50');
+                      setCouponError('Invalid coupon code. Try MEDBIX10, MEDBIX20, or FLAT50');
                     }
                   }}
                   activeOpacity={0.85}
@@ -209,7 +210,7 @@ export default function CartScreen() {
                 </View>
                 <View style={st.summaryRow}>
                   <Text style={st.summaryKey}>Delivery Fee</Text>
-                  <View style={st.freePill}><Text style={st.freePillText}>FREE</Text></View>
+                  <Text style={st.summaryVal}>₹{deliveryCharge.toFixed(2)}</Text>
                 </View>
                 {discount > 0 && (
                   <View style={st.summaryRow}>

@@ -6,13 +6,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useProducts } from '@/hooks/useFirestore';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import {
     ActivityIndicator, Animated, Dimensions,
-    FlatList, ImageBackground,
-    Image as RNImage, ScrollView, StatusBar,
+    FlatList, StatusBar, ScrollView,
     StyleSheet, Text, TouchableOpacity, View, RefreshControl
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const W = Dimensions.get('window').width;
@@ -69,8 +69,6 @@ const POPULAR_CATEGORIES = [
   { name: 'Respiratory Care', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/Respiratory_Care_zx610s.png' },
 ];
 
-
-
 const BABY_CARE_ESSENTIALS = [
   { name: 'Diapers & Wipes', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780501271/Diapers_and_Wipes_vvtayk.png' },
   { name: 'Baby Food', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780501272/Baby_Food_vlij9g.png' },
@@ -92,6 +90,10 @@ const ADULT_DIAPERS: Product[] = [
     reviews: 140,
     deliveryTime: 15,
     imageUrl: 'https://images.unsplash.com/photo-1522850959076-58d7c04f85e5?auto=format&fit=crop&w=300&q=80',
+    description: '',
+    warranty: null,
+    returnDays: 7,
+    stock: 100
   },
   {
     id: 'diaper_2',
@@ -104,6 +106,10 @@ const ADULT_DIAPERS: Product[] = [
     reviews: 210,
     deliveryTime: 12,
     imageUrl: 'https://images.unsplash.com/photo-1522850959076-58d7c04f85e5?auto=format&fit=crop&w=300&q=80',
+    description: '',
+    warranty: null,
+    returnDays: 7,
+    stock: 100
   },
   {
     id: 'diaper_3',
@@ -116,28 +122,32 @@ const ADULT_DIAPERS: Product[] = [
     reviews: 88,
     deliveryTime: 10,
     imageUrl: 'https://images.unsplash.com/photo-1522850959076-58d7c04f85e5?auto=format&fit=crop&w=300&q=80',
+    description: '',
+    warranty: null,
+    returnDays: 7,
+    stock: 100
   },
 ];
 
-// ─── Category Chip ─────────────────────────────────────────────────────────────
-const CatChip = ({ item, onPress }: { item: typeof CATS[0]; onPress: () => void }) => (
+// ─── Memoized Components ───────────────────────────────────────────────────────
+
+const CatChip = React.memo(({ item, onPress }: { item: typeof CATS[0]; onPress: () => void }) => (
   <TouchableOpacity style={st.catChipContainer} onPress={onPress} activeOpacity={0.75}>
     <View style={[st.catChipBox, { backgroundColor: item.color }]}>
-      <RNImage source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+      <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={200} />
     </View>
     <Text style={st.catName}>{item.name}</Text>
   </TouchableOpacity>
-);
+));
 
-// ─── Product Card ──────────────────────────────────────────────────────────────
-const ProductCard = ({ product, onPress }: { product: Product; onPress: () => void }) => {
-  const src = product.imageUrl ? { uri: product.imageUrl } : product.image || require('@/assets/images/medicine.png');
+const ProductCard = React.memo(({ product, onPress }: { product: Product; onPress: () => void }) => {
+  const src = product.imageUrl ? { uri: product.imageUrl } : require('@/assets/images/medicine.png');
   const disc = product.originalPrice && product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
   return (
     <TouchableOpacity style={st.card} onPress={onPress} activeOpacity={0.88}>
       <View style={st.cardImgBox}>
-        <RNImage source={src} style={st.cardImg} resizeMode="cover" />
+        <Image source={src} style={st.cardImg} contentFit="cover" cachePolicy="memory-disk" transition={200} />
         {disc > 0 && (
           <View style={st.discBadge}>
             <Text style={st.discText}>{disc}% OFF</Text>
@@ -148,7 +158,6 @@ const ProductCard = ({ product, onPress }: { product: Product; onPress: () => vo
         </View>
       </View>
       <View style={st.cardBody}>
-        <Text style={st.cardCat}>{product.category}</Text>
         <Text style={st.cardName} numberOfLines={2}>{product.name}</Text>
         <View style={st.cardRating}>
           <Text style={st.ratingText}>★ {product.rating}</Text>
@@ -163,10 +172,9 @@ const ProductCard = ({ product, onPress }: { product: Product; onPress: () => vo
       </View>
     </TouchableOpacity>
   );
-};
+});
 
-// ─── Section Header ────────────────────────────────────────────────────────────
-const SectionHead = ({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) => (
+const SectionHead = React.memo(({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) => (
   <View style={st.sectionHead}>
     <Text style={st.sectionTitle}>{title}</Text>
     {onSeeAll && (
@@ -175,14 +183,33 @@ const SectionHead = ({ title, onSeeAll }: { title: string; onSeeAll?: () => void
       </TouchableOpacity>
     )}
   </View>
-);
+));
 
-// ─── Home Screen ───────────────────────────────────────────────────────────────
+const SummerItem = React.memo(({ item, onPress }: { item: typeof SUMMER_ESSENTIALS[0], onPress: () => void }) => (
+  <TouchableOpacity style={st.summerItemContainer} activeOpacity={0.7} onPress={onPress}>
+    <View style={[st.summerItemBox, { backgroundColor: (item as any).color || '#EFF6FF' }]}>
+      <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={200} />
+    </View>
+    <Text style={st.summerLabel}>{item.name}</Text>
+  </TouchableOpacity>
+));
+
+const PopularItem = React.memo(({ item, onPress }: { item: typeof POPULAR_CATEGORIES[0], onPress: () => void }) => (
+  <TouchableOpacity style={st.popularItem} activeOpacity={0.7} onPress={onPress}>
+    <View style={st.popularIconBox}>
+      <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={200} />
+    </View>
+    <Text style={st.popularLabel} numberOfLines={2}>{item.name}</Text>
+  </TouchableOpacity>
+));
+
+// ─── Main Screen ───────────────────────────────────────────────────────────────
+
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { cartItems } = useCart();
-  const { products, loading, refresh } = useProducts();
+  const { products, loading, refresh, loadMore, hasMore } = useProducts(undefined, 20); // Limit to 20 initially
   const [refreshing, setRefreshing] = useState(false);
   const slideAnim = useRef(new Animated.Value(120)).current;
 
@@ -197,7 +224,212 @@ export default function HomeScreen() {
     }).start();
   }, [hasCart]);
 
-  if (loading) {
+  // Callbacks
+  const navigateToCategory = useCallback((catName: string) => {
+    router.push(`/(tabs)/category?name=${catName}`);
+  }, []);
+
+  const navigateToProduct = useCallback((id: string, name: string) => {
+    router.push(`/product?id=${id}&name=${name}`);
+  }, []);
+
+  // ListHeaderComponent contains all the top elements before vertical lists
+  const ListHeader = useMemo(() => (
+    <View>
+      {/* ── Header ── */}
+      <View style={st.header}>
+        <View style={st.headerLeft}>
+          <View style={st.logoRow}>
+            <View style={st.logoDot} />
+            <Text style={st.logoText}>MedBix</Text>
+          </View>
+          <TouchableOpacity style={st.locRow} activeOpacity={0.7}>
+            <Text style={st.locPin}>📍</Text>
+            <Text style={st.locAddr}>Home · Apt 4B</Text>
+            <Text style={st.locChev}>›</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity style={st.avatarBtn} onPress={() => router.push('/profile')} activeOpacity={0.85}>
+          <Text style={st.avatarInitial}>{user?.name ? user.name.charAt(0).toUpperCase() : '👤'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Search Bar ── */}
+      <TouchableOpacity style={st.searchBar} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.85}>
+        <Text style={st.searchIcon}>🔍</Text>
+        <Text style={st.searchHint}>Search medicines, vitamins, health…</Text>
+        <View style={st.searchFilter}>
+          <Text style={st.searchFilterText}>Filter</Text>
+        </View>
+      </TouchableOpacity>
+
+      {/* ── Trust Badges ── */}
+      <View style={st.trustRow}>
+        {TRUST_BADGES.map(b => (
+          <View key={b.label} style={st.trustBadge}>
+            <Text style={st.trustIcon}>{b.icon}</Text>
+            <Text style={st.trustLabel}>{b.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* ── Quick Actions Row ── */}
+      <View style={st.quickActionsRow}>
+        {QUICK_ACTIONS.map(q => (
+          <TouchableOpacity key={q.id} style={st.quickActionItem} activeOpacity={0.75} onPress={() => navigateToCategory('Medicines')}>
+            <View style={[st.quickActionBox, { backgroundColor: q.color, overflow: 'hidden' }]}>
+              <Image source={{ uri: q.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={200} />
+            </View>
+            <Text style={st.quickActionLabel}>{q.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* ── Prescription Upload Banner ── */}
+      <View style={st.prescriptionCard}>
+        <View style={st.prescriptionLeft}>
+          <Text style={st.prescriptionEmoji}>📋</Text>
+          <View style={st.prescriptionTexts}>
+            <Text style={st.prescriptionTitle}>Order with prescription</Text>
+            <Text style={st.prescriptionSub}>Upload & we'll search medicines for you</Text>
+          </View>
+        </View>
+        <TouchableOpacity style={st.uploadBtn} activeOpacity={0.8} onPress={() => router.push('/profile')}>
+          <Text style={st.uploadBtnText}>Upload</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Categories ── */}
+      <View style={st.section}>
+        <SectionHead title="Categories" />
+        <View style={st.catRow}>
+          {CATS.map(c => (
+            <CatChip key={c.id} item={c} onPress={() => navigateToCategory(c.filterName)} />
+          ))}
+        </View>
+      </View>
+
+      {/* ── Hero Banner ── */}
+      <View style={st.bannerWrap}>
+        <View style={st.banner}>
+          <Image source={require('@/assets/images/dealBg.png')} style={StyleSheet.absoluteFillObject} contentFit="cover" cachePolicy="memory-disk" />
+          <View style={st.bannerOverlay}>
+            <View style={st.bannerPill}>
+              <Text style={st.bannerPillText}>🔥 Limited Time</Text>
+            </View>
+            <Text style={st.bannerTitle}>Up to 20% Off</Text>
+            <Text style={st.bannerSub}>On all medicines & health products</Text>
+            <TouchableOpacity
+              style={st.bannerBtn}
+              onPress={() => navigateToCategory('Medicines')}
+              activeOpacity={0.88}
+            >
+              <Text style={st.bannerBtnText}>Shop Now →</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </View>
+  ), [user, navigateToCategory]);
+
+  const SECTIONS = useMemo(() => [
+    {
+      id: 'prev-ordered',
+      title: 'Previously ordered items',
+      type: 'horizontal_products',
+      data: products.slice(0, 5),
+    },
+    {
+      id: 'trending',
+      title: 'Trending Now',
+      type: 'horizontal_products',
+      data: products.slice(0, 10),
+    },
+    {
+      id: 'summer-essentials',
+      title: 'Summer Essentials',
+      subtitle: 'A time to shine and protect more',
+      type: 'grid',
+      data: SUMMER_ESSENTIALS,
+      numColumns: 3,
+      Component: SummerItem,
+    },
+    {
+      id: 'best-sellers',
+      title: 'Best Sellers',
+      type: 'horizontal_products',
+      data: products.slice(10, 20),
+    },
+    {
+      id: 'popular-categories',
+      title: 'Popular categories',
+      type: 'grid',
+      data: POPULAR_CATEGORIES,
+      numColumns: 4,
+      Component: PopularItem,
+    },
+    {
+      id: 'baby-care',
+      title: 'Baby Care Essentials',
+      type: 'grid',
+      data: BABY_CARE_ESSENTIALS,
+      numColumns: 4,
+      Component: PopularItem,
+    }
+  ], [products]);
+
+  const renderSection = ({ item }: { item: typeof SECTIONS[0] }) => {
+    if (item.type === 'horizontal_products') {
+      if (!item.data || item.data.length === 0) return null;
+      return (
+        <View style={st.section}>
+          <SectionHead title={item.title} onSeeAll={() => navigateToCategory('Medicines')} />
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={item.data as Product[]}
+            renderItem={({ item: product }) => (
+              <ProductCard product={product} onPress={() => navigateToProduct(product.id, product.name)} />
+            )}
+            keyExtractor={i => i.id}
+            contentContainerStyle={st.hList}
+            initialNumToRender={3}
+            maxToRenderPerBatch={3}
+            windowSize={3}
+            removeClippedSubviews={true}
+          />
+        </View>
+      );
+    }
+    
+    if (item.type === 'grid') {
+      return (
+        <View style={st.section}>
+          {item.subtitle ? (
+            <View style={st.sectionHead}>
+              <View>
+                <Text style={st.sectionTitle}>{item.title}</Text>
+                <Text style={{ fontSize: 11, color: C.inkMuted, marginTop: 2 }}>{item.subtitle}</Text>
+              </View>
+            </View>
+          ) : (
+            <SectionHead title={item.title} />
+          )}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 12, justifyContent: item.numColumns === 4 ? 'space-between' : 'flex-start' }}>
+            {item.data.map((gridItem: any, index: number) => {
+              const Comp = item.Component;
+              if (!Comp) return null;
+              return <Comp key={gridItem.name + index} item={gridItem} onPress={() => navigateToCategory(gridItem.filterName || gridItem.name)} />;
+            })}
+          </View>
+        </View>
+      );
+    }
+    
+    return null;
+  };
+
+  if (loading && products.length === 0) {
     return (
       <SafeAreaView style={st.container}>
         <View style={st.loadingBox}>
@@ -220,9 +452,20 @@ export default function HomeScreen() {
     <SafeAreaView style={st.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
 
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+      <FlatList
+        data={SECTIONS}
+        keyExtractor={item => item.id}
+        ListHeaderComponent={ListHeader}
+        renderItem={renderSection}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: hasCart ? 130 : 32 }}
+        initialNumToRender={4}
+        maxToRenderPerBatch={4}
+        windowSize={5}
+        removeClippedSubviews={true}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={hasMore ? <ActivityIndicator color={C.blue} style={{ marginVertical: 20 }} /> : null}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={async () => {
             setRefreshing(true);
@@ -230,227 +473,7 @@ export default function HomeScreen() {
             setRefreshing(false);
           }} colors={[C.blue]} />
         }
-      >
-
-        {/* ── Header ── */}
-        <View style={st.header}>
-          <View style={st.headerLeft}>
-            <View style={st.logoRow}>
-              <View style={st.logoDot} />
-              <Text style={st.logoText}>OnWay</Text>
-            </View>
-            <TouchableOpacity style={st.locRow} activeOpacity={0.7}>
-              <Text style={st.locPin}>📍</Text>
-              <Text style={st.locAddr}>Home · Apt 4B</Text>
-              <Text style={st.locChev}>›</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity style={st.avatarBtn} onPress={() => router.push('/profile')} activeOpacity={0.85}>
-            <Text style={st.avatarInitial}>{user?.name ? user.name.charAt(0).toUpperCase() : '👤'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Search Bar ── */}
-        <TouchableOpacity style={st.searchBar} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.85}>
-          <Text style={st.searchIcon}>🔍</Text>
-          <Text style={st.searchHint}>Search medicines, vitamins, health…</Text>
-          <View style={st.searchFilter}>
-            <Text style={st.searchFilterText}>Filter</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* ── Trust Badges ── */}
-        <View style={st.trustRow}>
-          {TRUST_BADGES.map(b => (
-            <View key={b.label} style={st.trustBadge}>
-              <Text style={st.trustIcon}>{b.icon}</Text>
-              <Text style={st.trustLabel}>{b.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* ── Quick Actions Row ── */}
-        <View style={st.quickActionsRow}>
-          {QUICK_ACTIONS.map(q => (
-            <TouchableOpacity key={q.id} style={st.quickActionItem} activeOpacity={0.75} onPress={() => router.push(`/(tabs)/category?name=Medicines`)}>
-              <View style={[st.quickActionBox, { backgroundColor: q.color, overflow: 'hidden' }]}>
-                <RNImage source={{ uri: q.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-              </View>
-              <Text style={st.quickActionLabel}>{q.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* ── Prescription Upload Banner ── */}
-        <View style={st.prescriptionCard}>
-          <View style={st.prescriptionLeft}>
-            <Text style={st.prescriptionEmoji}>📋</Text>
-            <View style={st.prescriptionTexts}>
-              <Text style={st.prescriptionTitle}>Order with prescription</Text>
-              <Text style={st.prescriptionSub}>Upload & we'll search medicines for you</Text>
-            </View>
-          </View>
-          <TouchableOpacity style={st.uploadBtn} activeOpacity={0.8} onPress={() => router.push('/profile')}>
-            <Text style={st.uploadBtnText}>Upload</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Categories ── */}
-        <View style={st.section}>
-          <SectionHead title="Categories" />
-          <View style={st.catRow}>
-            {CATS.map(c => (
-              <CatChip key={c.id} item={c} onPress={() => router.push(`/(tabs)/category?name=${c.filterName}`)} />
-            ))}
-          </View>
-        </View>
-
-        {/* ── Hero Banner ── */}
-        <View style={st.bannerWrap}>
-          <ImageBackground
-            source={require('@/assets/images/dealBg.png')}
-            style={st.banner}
-            imageStyle={st.bannerImg}
-          >
-            <View style={st.bannerOverlay}>
-              <View style={st.bannerPill}>
-                <Text style={st.bannerPillText}>🔥 Limited Time</Text>
-              </View>
-              <Text style={st.bannerTitle}>Up to 20% Off</Text>
-              <Text style={st.bannerSub}>On all medicines & health products</Text>
-              <TouchableOpacity
-                style={st.bannerBtn}
-                onPress={() => router.push('/(tabs)/category?name=Medicines')}
-                activeOpacity={0.88}
-              >
-                <Text style={st.bannerBtnText}>Shop Now →</Text>
-              </TouchableOpacity>
-            </View>
-          </ImageBackground>
-        </View>
-
-        {/* ── Previously Ordered Items ── */}
-        <View style={st.section}>
-          <SectionHead
-            title="Previously ordered items"
-            onSeeAll={() => router.push('/(tabs)/category?name=Medicines')}
-          />
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={products.slice(0, 3)}
-            renderItem={({ item }) => (
-              <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
-            )}
-            keyExtractor={i => i.id}
-            contentContainerStyle={st.hList}
-          />
-        </View>
-
-        {/* ── Trending ── */}
-        <View style={st.section}>
-          <SectionHead
-            title="Trending Now"
-            onSeeAll={() => router.push('/(tabs)/category?name=Medicines')}
-          />
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={products.slice(0, Math.ceil(products.length / 2))}
-            renderItem={({ item }) => (
-              <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
-            )}
-            keyExtractor={i => i.id}
-            contentContainerStyle={st.hList}
-          />
-        </View>
-
-        {/* ── Best Sellers ── */}
-        <View style={st.section}>
-          <SectionHead
-            title="Best Sellers"
-            onSeeAll={() => router.push('/(tabs)/category?name=Medicines')}
-          />
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={products.slice(Math.ceil(products.length / 2))}
-            renderItem={({ item }) => (
-              <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
-            )}
-            keyExtractor={i => i.id}
-            contentContainerStyle={st.hList}
-          />
-        </View>
-
-        {/* ── Summer Essentials ── */}
-        <View style={st.section}>
-          <View style={st.sectionHead}>
-            <View>
-              <Text style={st.sectionTitle}>Summer Essentials</Text>
-              <Text style={{ fontSize: 11, color: C.inkMuted, marginTop: 2 }}>A time to shine and protect more</Text>
-            </View>
-          </View>
-          <View style={st.summerGrid}>
-            {SUMMER_ESSENTIALS.map((s, index) => (
-              <TouchableOpacity key={index} style={st.summerItemContainer} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=Skin Care`)}>
-                <View style={[st.summerItemBox, { backgroundColor: s.color }]}>
-                  <RNImage source={{ uri: s.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                </View>
-                <Text style={st.summerLabel}>{s.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* ── Popular Categories ── */}
-        <View style={st.section}>
-          <SectionHead title="Popular categories" />
-          <View style={st.popularGrid}>
-            {POPULAR_CATEGORIES.map((c, index) => (
-              <TouchableOpacity key={index} style={st.popularItem} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=${c.name}`)}>
-                <View style={st.popularIconBox}>
-                  <RNImage source={{ uri: c.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                </View>
-                <Text style={st.popularLabel} numberOfLines={2}>{c.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-
-
-        {/* ── Baby Care Essentials ── */}
-        <View style={st.section}>
-          <SectionHead title="Baby Care Essentials" />
-          <View style={st.popularGrid}>
-            {BABY_CARE_ESSENTIALS.map((c, index) => (
-              <TouchableOpacity key={index} style={st.popularItem} activeOpacity={0.7} onPress={() => router.push(`/(tabs)/category?name=${c.name}`)}>
-                <View style={st.popularIconBox}>
-                  <RNImage source={{ uri: c.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                </View>
-                <Text style={st.popularLabel} numberOfLines={2}>{c.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* ── Friends Adult Diapers ── */}
-        <View style={st.section}>
-          <SectionHead title="Friends Adult Diapers (Min 15% Off)" onSeeAll={() => router.push('/(tabs)/category?name=Medicines')} />
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={ADULT_DIAPERS}
-            renderItem={({ item }) => (
-              <ProductCard product={item} onPress={() => router.push(`/product?id=${item.id}&name=${item.name}`)} />
-            )}
-            keyExtractor={i => i.id}
-            contentContainerStyle={st.hList}
-          />
-        </View>
-
-      </ScrollView>
+      />
 
       {/* ── Floating Cart Bar ── */}
       <Animated.View
@@ -589,8 +612,8 @@ const st = StyleSheet.create({
     overflow: 'hidden', borderWidth: 1, borderColor: C.border,
     ...shadow('md'),
   },
-  cardImgBox: { position: 'relative', backgroundColor: C.surfaceAlt },
-  cardImg: { width: '100%', height: 128 },
+  cardImgBox: { position: 'relative', backgroundColor: C.surfaceAlt, height: 128 },
+  cardImg: { width: '100%', height: '100%' },
   discBadge: {
     position: 'absolute', top: 8, left: 8,
     backgroundColor: C.error, borderRadius: 6,

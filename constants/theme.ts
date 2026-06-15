@@ -1,5 +1,5 @@
 /**
- * ONWAY — Premium Healthcare Design System
+ * MedBix — Premium Healthcare Design System
  * Primary: #2563EB  |  Teal: #14B8A6  |  BG: #F8FAFC
  */
 import { Dimensions, Platform } from 'react-native';

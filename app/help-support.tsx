@@ -47,7 +47,7 @@ const FAQ_DATA: FAQItem[] = [
     id: '4',
     category: 'Delivery',
     question: 'Do you charge for delivery?',
-    answer: 'Delivery charges vary by location and order value. Orders above ₹500 may qualify for free delivery. Check the delivery fee at checkout.',
+    answer: 'There is a flat ₹100 delivery fee for all orders.',
     icon: '💰',
   },
   {
@@ -87,9 +87,9 @@ const CONTACT_METHODS: ContactMethod[] = [
   {
     id: '2',
     title: 'Email Us',
-    description: 'support@onway.com',
-    icon: '✉️',
-    action: 'mailto:support@onway.com',
+    description: 'support@medbix.com',
+    icon: 'mail-outline',
+    action: 'mailto:support@medbix.com',
     type: 'email',
   },
   {
@@ -105,7 +105,7 @@ const CONTACT_METHODS: ContactMethod[] = [
     title: 'Visit Website',
     description: 'Help center & FAQs',
     icon: '🌐',
-    action: 'https://onway.com/help',
+    action: 'https://medbix.com/help',
     type: 'web',
   },
 ];

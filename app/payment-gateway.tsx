@@ -75,7 +75,7 @@ export default function PaymentGatewayScreen() {
               key: ${safeJson(keyId)},
               amount: ${amountInPaise},
               currency: "INR",
-              name: "ONWAY",
+              name: "MedBix",
               description: "Healthcare Order Payment",
               ${isRealRazorpayOrder ? `order_id: ${safeJson(orderId)},` : '// No order_id in test/mock mode'}
               prefill: {

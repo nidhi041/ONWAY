@@ -3,7 +3,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useNotifications } from '@/hooks/useFirestore';
 import { useRouter } from 'expo-router';
-import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
+import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const MENU = [
@@ -69,7 +70,13 @@ export default function ProfileScreen() {
         <View style={st.profileHero}>
           <View style={st.avatarWrap}>
             {(user as any)?.photoURL ? (
-              <Image source={{ uri: (user as any).photoURL }} style={st.avatar} />
+              <Image 
+                source={{ uri: (user as any).photoURL }} 
+                style={st.avatar} 
+                cachePolicy="memory-disk" 
+                contentFit="cover" 
+                transition={200} 
+              />
             ) : (
               <View style={[st.avatar, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#e3f2fd' }]}>
                 <Text style={{ fontSize: 40, fontWeight: '700', color: '#1976d2' }}>
@@ -155,7 +162,7 @@ export default function ProfileScreen() {
 
         {/* Footer */}
         <View style={st.footer}>
-          <Text style={st.footerText}>OnWay Healthcare · v2.4.1</Text>
+          <Text style={st.footerText}>MedBix Healthcare · v2.4.1</Text>
           <Text style={st.footerSub}>Made with ❤️ for your health</Text>
         </View>
 

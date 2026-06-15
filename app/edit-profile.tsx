@@ -5,13 +5,13 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Image,
+  ScrollView,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -157,7 +157,13 @@ export default function EditProfileScreen() {
           <View style={styles.imageSection}>
             <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
               {displayImage ? (
-                <Image source={{ uri: displayImage }} style={styles.profileImage} />
+                <Image 
+                  source={{ uri: displayImage }} 
+                  style={styles.profileImage} 
+                  cachePolicy="memory-disk" 
+                  contentFit="cover" 
+                  transition={200} 
+                />
               ) : (
                 <View style={[styles.profileImage, styles.placeholderImage]}>
                   <Ionicons name="person" size={60} color="#0C63E4" />

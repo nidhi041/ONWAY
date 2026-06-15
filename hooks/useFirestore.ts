@@ -12,6 +12,8 @@ import {
   doc,
   serverTimestamp,
   getDocs,
+  limit,
+  startAfter,
 } from 'firebase/firestore';
 
 // ============================================
@@ -393,42 +395,93 @@ export interface Product {
   stock: number;
 }
 
-export const useProducts = (category?: string) => {
+export const useProducts = (category?: string, fetchLimit?: number) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const productsRef = collection(db, 'products');
-        let q;
-        
-        if (category) {
-          q = query(productsRef, where('category', '==', category));
-        } else {
-          q = query(productsRef);
-        }
-
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Product[];
-        
-        setProducts(data);
-        setLoading(false);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch products');
-        setLoading(false);
+      
+      let constraints: any[] = [];
+      if (category) {
+        constraints.push(where('category', 'array-contains', category));
       }
-    };
+      if (fetchLimit) {
+        constraints.push(limit(fetchLimit));
+      }
+
+      const q = query(productsRef, ...constraints);
+      const snapshot = await getDocs(q);
+      
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Product[];
+      
+      setProducts(data);
+      if (snapshot.docs.length > 0) {
+        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+      }
+      if (fetchLimit && snapshot.docs.length < fetchLimit) {
+        setHasMore(false);
+      }
+      setLoading(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch products');
+      setLoading(false);
+    }
+  };
+
+  const loadMore = async () => {
+    if (!hasMore || loadingMore || !lastVisible) return;
+    
+    try {
+      setLoadingMore(true);
+      const productsRef = collection(db, 'products');
+      
+      let constraints: any[] = [];
+      if (category) {
+        constraints.push(where('category', '==', category));
+      }
+      constraints.push(startAfter(lastVisible));
+      if (fetchLimit) {
+        constraints.push(limit(fetchLimit));
+      }
+
+      const q = query(productsRef, ...constraints);
+      const snapshot = await getDocs(q);
+      
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Product[];
+      
+      if (data.length > 0) {
+        setProducts((prev) => [...prev, ...data]);
+        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+      }
+      
+      if (fetchLimit && snapshot.docs.length < fetchLimit) {
+        setHasMore(false);
+      }
+      setLoadingMore(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load more products');
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     fetchProducts();
   }, [category]);
 
-  return { products, loading, error, refresh: fetchProducts };
+  return { products, loading, loadingMore, hasMore, error, refresh: fetchProducts, loadMore };
 };
 
 export const useProduct = (productId: string) => {
