@@ -148,11 +148,11 @@ const ProductCard = React.memo(({ product, onPress }: { product: Product; onPres
     <TouchableOpacity style={st.card} onPress={onPress} activeOpacity={0.88}>
       <View style={st.cardImgBox}>
         <Image source={src} style={st.cardImg} contentFit="cover" cachePolicy="memory-disk" transition={200} />
-        {disc > 0 && (
+        {disc > 0 ? (
           <View style={st.discBadge}>
             <Text style={st.discText}>{disc}% OFF</Text>
           </View>
-        )}
+        ) : null}
         <View style={st.etaBadge}>
           <Text style={st.etaText}>⚡ {product.deliveryTime}m</Text>
         </View>
@@ -164,9 +164,9 @@ const ProductCard = React.memo(({ product, onPress }: { product: Product; onPres
         </View>
         <View style={st.cardPriceRow}>
           <Text style={st.cardPrice}>₹{product.price}</Text>
-          {product.originalPrice && product.originalPrice > product.price && (
+          {!!product.originalPrice && product.originalPrice > product.price ? (
             <Text style={st.cardOrig}>₹{product.originalPrice}</Text>
-          )}
+          ) : null}
         </View>
         <AddToCartButton product={product} size="small" />
       </View>

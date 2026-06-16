@@ -55,7 +55,7 @@ const verifyAuth = async (req: functions.https.Request, res: functions.Response)
  * Cloud Function: Create Razorpay Order
  * Called from frontend checkout to create a Razorpay order
  */
-export const createRazorpayOrder = functions.https.onRequest(async (req, res) => {
+export const createRazorpayOrder = functions.https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
   setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
@@ -121,7 +121,7 @@ export const createRazorpayOrder = functions.https.onRequest(async (req, res) =>
  * Cloud Function: Verify Payment Signature
  * Called after successful Razorpay payment to verify signature and create order
  */
-export const verifyPaymentSignature = functions.https.onRequest(async (req, res) => {
+export const verifyPaymentSignature = functions.https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
   setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
@@ -231,7 +231,7 @@ export const verifyPaymentSignature = functions.https.onRequest(async (req, res)
  * Cloud Function: Log Payment Failure
  * Called when payment fails to maintain audit trail
  */
-export const logPaymentFailure = functions.https.onRequest(async (req, res) => {
+export const logPaymentFailure = functions.https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
   setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
