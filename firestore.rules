@@ -1,27 +1,44 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Helper function to check if the user is an admin
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid));
+    }
+
+    match /adminUsers/{userId} {
+      allow read: if request.auth != null;
+      allow write: if false; 
+    }
+
     // Allow users to read and write their own user document and all nested subcollections
     match /users/{userId} {
-      allow read, write: if request.auth.uid == userId;
+      allow read, write: if request.auth.uid == userId || isAdmin();
       
-      match /addresses/{id} { allow read, write: if request.auth.uid == userId; }
-      match /cart/{id} { allow read, write: if request.auth.uid == userId; }
-      match /paymentMethods/{id} { allow read, write: if request.auth.uid == userId; }
-      match /notifications/{id} { allow read, write: if request.auth.uid == userId; }
+      match /addresses/{id} { allow read, write: if request.auth.uid == userId || isAdmin(); }
+      match /cart/{id} { allow read, write: if request.auth.uid == userId || isAdmin(); }
+      match /paymentMethods/{id} { allow read, write: if request.auth.uid == userId || isAdmin(); }
+      match /notifications/{id} { allow read, write: if request.auth.uid == userId || isAdmin(); }
       
       match /orders/{orderId} {
-        allow read, create: if request.auth.uid == userId;
-        allow update: if request.auth.uid == userId && 
-                     (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'totalAmount', 'paymentVerified', 'items']));
-        allow delete: if false;
+        allow read: if request.auth.uid == userId || isAdmin();
+        allow create: if request.auth.uid == userId || isAdmin();
+        allow update: if (request.auth.uid == userId && 
+                     (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'totalAmount', 'paymentVerified', 'items']))) || isAdmin();
+        allow delete: if isAdmin();
       }
     }
     
-    // Allow public read for products
+    // Allow public read for products, and admin write
     match /products/{document=**} {
       allow read: if true;
-      allow write: if false; // Only backend can write
+      allow write: if isAdmin();
+    }
+    
+    // Collection group query access for orders
+    match /{path=**}/orders/{orderId} {
+      allow read: if isAdmin();
     }
   }
 }
