@@ -50,9 +50,15 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "4f289bbc-66f1-4db2-a2d7-738702e2f01f"
+        "projectId": "6f4f246f-1423-4d6b-a73e-2f5c0de0c799"
       }
     },
-    "owner": "arunkumar6684"
+    "owner": "nidhi04s-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6f4f246f-1423-4d6b-a73e-2f5c0de0c799"
+    }
   }
 }
