@@ -31,6 +31,7 @@ export default function PaymentGatewayScreen() {
   const deliveryFee = parseFloat((params.deliveryFee as string) || '0');
   const tax = parseFloat((params.tax as string) || '0');
   const shippingAddressStr = params.shippingAddress as string;
+  const storeLocation = params.storeLocation as string | undefined;
 
   // Convert amount to paise for Razorpay options if needed, but wait, the backend or service
   // already sets the amount on the order. We just need to pass the amount to Razorpay option.
@@ -150,7 +151,8 @@ export default function PaymentGatewayScreen() {
           paymentMethodObj,
           subtotal,
           deliveryFee,
-          tax
+          tax,
+          storeLocation
         );
 
         await clearCart();

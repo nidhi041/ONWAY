@@ -4,13 +4,14 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { C, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useLocationContext, LOCATIONS } from '@/context/LocationContext';
 import { useProducts } from '@/hooks/useFirestore';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import {
     ActivityIndicator, Animated, Dimensions,
     FlatList, StatusBar, ScrollView,
-    StyleSheet, Text, TouchableOpacity, View, RefreshControl
+    StyleSheet, Text, TouchableOpacity, View, RefreshControl, Modal
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +20,7 @@ const W = Dimensions.get('window').width;
 const CARD_W = (W - 40 - 12) / 2;
 
 const CATS = [
-  { id: '1', name: 'Medicines',   imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780499501/Medicine_k7pp4c.png', color: '#EFF6FF', filterName: 'Medicines' },
+  { id: '1', name: 'Medicines',   imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780499501/Medicine_k7pp4c.png', color: '#EFF6FF', filterName: 'Medicine' },
   { id: '2', name: 'First Aid',   imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343376/First_aid_irbcod.png', color: '#FFF1F2', filterName: 'First Aid' },
   { id: '3', name: 'Vitamins',    imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343380/Protein_supplement_ifecyo.png', color: '#F0FDFA', filterName: 'Vitamins' },
   { id: '4', name: 'Pain Relief', imageUrl: 'https://res.cloudinary.com/dhjzybacp/image/upload/v1780343378/Pain_relief_onmg1v.png', color: '#FFFBEB', filterName: 'Pain Relief' },
@@ -134,7 +135,7 @@ const ADULT_DIAPERS: Product[] = [
 const CatChip = React.memo(({ item, onPress }: { item: typeof CATS[0]; onPress: () => void }) => (
   <TouchableOpacity style={st.catChipContainer} onPress={onPress} activeOpacity={0.75}>
     <View style={[st.catChipBox, { backgroundColor: item.color }]}>
-      <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={200} />
+      <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={200} priority="high" />
     </View>
     <Text style={st.catName}>{item.name}</Text>
   </TouchableOpacity>
@@ -209,8 +210,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { cartItems } = useCart();
+  const { location, setLocation, isLoadingLocation } = useLocationContext();
   const { products, loading, refresh, loadMore, hasMore } = useProducts(undefined, 20); // Limit to 20 initially
   const [refreshing, setRefreshing] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(120)).current;
 
   const totalQty   = cartItems.reduce((s, i) => s + i.quantity, 0);
@@ -243,9 +246,9 @@ export default function HomeScreen() {
             <View style={st.logoDot} />
             <Text style={st.logoText}>MedBix</Text>
           </View>
-          <TouchableOpacity style={st.locRow} activeOpacity={0.7}>
+          <TouchableOpacity style={st.locRow} activeOpacity={0.7} onPress={() => setShowLocationModal(true)}>
             <Text style={st.locPin}>📍</Text>
-            <Text style={st.locAddr}>Home · Apt 4B</Text>
+            <Text style={st.locAddr}>{location || 'Select Location'}</Text>
             <Text style={st.locChev}>›</Text>
           </TouchableOpacity>
         </View>
@@ -276,28 +279,28 @@ export default function HomeScreen() {
       {/* ── Quick Actions Row ── */}
       <View style={st.quickActionsRow}>
         {QUICK_ACTIONS.map(q => (
-          <TouchableOpacity key={q.id} style={st.quickActionItem} activeOpacity={0.75} onPress={() => navigateToCategory('Medicines')}>
+          <TouchableOpacity 
+            key={q.id} 
+            style={st.quickActionItem} 
+            activeOpacity={0.75} 
+            onPress={() => {
+              if (q.id === 'consultant') {
+                router.push('/chat');
+              } else if (q.id === 'labs') {
+                router.push('/labtests');
+              } else {
+                navigateToCategory('Medicine');
+              }
+            }}
+          >
             <View style={[st.quickActionBox, { backgroundColor: q.color, overflow: 'hidden' }]}>
-              <Image source={{ uri: q.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={200} />
+              <Image source={{ uri: q.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={200} priority="high" />
             </View>
             <Text style={st.quickActionLabel}>{q.name}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* ── Prescription Upload Banner ── */}
-      <View style={st.prescriptionCard}>
-        <View style={st.prescriptionLeft}>
-          <Text style={st.prescriptionEmoji}>📋</Text>
-          <View style={st.prescriptionTexts}>
-            <Text style={st.prescriptionTitle}>Order with prescription</Text>
-            <Text style={st.prescriptionSub}>Upload & we'll search medicines for you</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={st.uploadBtn} activeOpacity={0.8} onPress={() => router.push('/profile')}>
-          <Text style={st.uploadBtnText}>Upload</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* ── Categories ── */}
       <View style={st.section}>
@@ -312,7 +315,7 @@ export default function HomeScreen() {
       {/* ── Hero Banner ── */}
       <View style={st.bannerWrap}>
         <View style={st.banner}>
-          <Image source={require('@/assets/images/dealBg.png')} style={StyleSheet.absoluteFillObject} contentFit="cover" cachePolicy="memory-disk" />
+          <Image source={require('@/assets/images/dealBg.png')} style={StyleSheet.absoluteFillObject} contentFit="cover" cachePolicy="memory-disk" priority="high" />
           <View style={st.bannerOverlay}>
             <View style={st.bannerPill}>
               <Text style={st.bannerPillText}>🔥 Limited Time</Text>
@@ -321,7 +324,7 @@ export default function HomeScreen() {
             <Text style={st.bannerSub}>On all medicines & health products</Text>
             <TouchableOpacity
               style={st.bannerBtn}
-              onPress={() => navigateToCategory('Medicines')}
+              onPress={() => navigateToCategory('Medicine')}
               activeOpacity={0.88}
             >
               <Text style={st.bannerBtnText}>Shop Now →</Text>
@@ -330,7 +333,7 @@ export default function HomeScreen() {
         </View>
       </View>
     </View>
-  ), [user, navigateToCategory]);
+  ), [user, location, navigateToCategory]);
 
   const SECTIONS = useMemo(() => [
     {
@@ -383,7 +386,7 @@ export default function HomeScreen() {
       if (!item.data || item.data.length === 0) return null;
       return (
         <View style={st.section}>
-          <SectionHead title={item.title} onSeeAll={() => navigateToCategory('Medicines')} />
+          <SectionHead title={item.title} onSeeAll={() => navigateToCategory('Medicine')} />
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -496,6 +499,40 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </Animated.View>
+
+      {/* ── Location Selection Modal ── */}
+      <Modal visible={showLocationModal || (!location && !isLoadingLocation)} animationType="slide" transparent={true}>
+        <View style={st.modalOverlay}>
+          <View style={st.modalContent}>
+            <Text style={st.modalTitle}>Select Your Location</Text>
+            <Text style={st.modalSub}>Choose a store location to continue</Text>
+            
+            <View style={st.locationList}>
+              {LOCATIONS.map((loc) => (
+                <TouchableOpacity
+                  key={loc}
+                  style={[st.locationItem, location === loc && st.locationItemActive]}
+                  onPress={async () => {
+                    await setLocation(loc);
+                    setShowLocationModal(false);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[st.locationItemText, location === loc && st.locationItemTextActive]}>
+                    {loc}
+                  </Text>
+                  {location === loc && <Text style={st.locationCheck}>✓</Text>}
+                </TouchableOpacity>
+              ))}
+            </View>
+            {location && (
+              <TouchableOpacity style={st.modalCloseBtn} onPress={() => setShowLocationModal(false)}>
+                <Text style={st.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -790,4 +827,28 @@ const st = StyleSheet.create({
     color: C.inkSub,
     textAlign: 'center',
   },
+
+  // modal
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: 24, paddingBottom: 40,
+  },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: C.ink, marginBottom: 4 },
+  modalSub: { fontSize: 14, color: C.inkMuted, marginBottom: 20 },
+  locationList: { gap: 12 },
+  locationItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    padding: 16, borderRadius: 14, borderWidth: 1, borderColor: C.border,
+    backgroundColor: C.surface,
+  },
+  locationItemActive: { borderColor: C.blue, backgroundColor: C.blueLight },
+  locationItemText: { fontSize: 16, fontWeight: '600', color: C.ink },
+  locationItemTextActive: { color: C.blue },
+  locationCheck: { fontSize: 16, fontWeight: '800', color: C.blue },
+  modalCloseBtn: { marginTop: 16, padding: 16, alignItems: 'center' },
+  modalCloseText: { fontSize: 15, fontWeight: '600', color: C.inkMuted },
 });

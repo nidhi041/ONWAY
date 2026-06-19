@@ -1,0 +1,41 @@
+appId: com.arunkumar6684.OnWay
+---
+# ─── Cart Flow E2E Test ─────────────────────────────────────────────────────────
+# Tests: Home → Browse Categories → Add to Cart → View Cart
+
+- launchApp:
+    clearState: false
+
+# Verify Home screen loaded
+- assertVisible: "MedBix"
+
+# Tap on "Medicines" category
+- tapOn:
+    text: "Medicines"
+    timeout: 5000
+
+# Wait for category page to load
+- assertVisible:
+    text: "Medicine"
+    timeout: 5000
+
+# Look for an "+ Add" button and tap it
+- tapOn:
+    text: "+ Add"
+    index: 0
+    timeout: 5000
+
+# Verify the quantity stepper appeared (shows "1")
+- assertVisible:
+    text: "1"
+    timeout: 3000
+
+# Navigate to Cart tab
+- tapOn:
+    text: "Cart"
+    timeout: 3000
+
+# Verify we are on the Cart screen with items
+- assertVisible:
+    text: "₹"
+    timeout: 5000

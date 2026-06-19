@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const MENU = [
   { id: '1', icon: '📦', label: 'My Orders',          sub: 'Track, reorder, return',   color: '#EFF6FF', iconBg: '#DBEAFE' },
+  { id: '7', icon: '🧪', label: 'Lab Bookings',       sub: 'History & reports',        color: '#F4F8FF', iconBg: '#E0E7FF' },
   { id: '2', icon: '📍', label: 'Saved Addresses',    sub: 'Home, Work & more',         color: '#FFF1F2', iconBg: '#FFE4E6' },
   { id: '3', icon: '💳', label: 'Payment Methods',    sub: 'Cards & UPI',               color: '#F0FDFA', iconBg: '#CCFBF1' },
   { id: '4', icon: '🔔', label: 'Notifications',      sub: 'Offers & updates',          color: '#FFFBEB', iconBg: '#FEF3C7' },
@@ -19,6 +20,7 @@ const MENU = [
 const ROUTES: Record<string, string> = {
   '1': '/orders', '2': '/saved-addresses', '3': '/payment-methods',
   '4': '/notifications', '5': '/privacy-security', '6': '/help-support',
+  '7': '/lab-bookings',
 };
 
 export default function ProfileScreen() {

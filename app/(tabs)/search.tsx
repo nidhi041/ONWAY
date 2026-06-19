@@ -52,7 +52,7 @@ export default function SearchScreen() {
   const [results, setResults] = useState<Product[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { products: allProducts } = useProducts();
+  const { products: allProducts } = useProducts(undefined, undefined, false);
 
   // Load recent searches from AsyncStorage on mount
   useEffect(() => {
@@ -80,14 +80,15 @@ export default function SearchScreen() {
     }
     // Debounce 300ms — only search after user stops typing
     debounceRef.current = setTimeout(() => {
+      const searchText = text.toLowerCase() === 'medicines' ? 'medicine' : text.toLowerCase();
       setResults(allProducts.filter(p => {
         const categoryMatch = Array.isArray(p.category) 
-          ? p.category.some(c => c.toLowerCase().includes(text.toLowerCase()))
-          : (p.category && p.category.toLowerCase().includes(text.toLowerCase()))
+          ? p.category.some(c => c.toLowerCase().includes(searchText))
+          : (p.category && p.category.toLowerCase().includes(searchText))
 
         return (
-          p.name.toLowerCase().includes(text.toLowerCase()) ||
-          (p.brand && p.brand.toLowerCase().includes(text.toLowerCase())) ||
+          p.name.toLowerCase().includes(searchText) ||
+          (p.brand && p.brand.toLowerCase().includes(searchText)) ||
           categoryMatch
         );
       }));
@@ -97,14 +98,15 @@ export default function SearchScreen() {
   const selectSuggestion = useCallback((text: string) => {
     setQuery(text);
     saveRecent(text);
+    const searchText = text.toLowerCase() === 'medicines' ? 'medicine' : text.toLowerCase();
     setResults(allProducts.filter(p => {
       const categoryMatch = Array.isArray(p.category)
-        ? p.category.some(c => c.toLowerCase().includes(text.toLowerCase()))
-        : (p.category && p.category.toLowerCase().includes(text.toLowerCase()))
+        ? p.category.some(c => c.toLowerCase().includes(searchText))
+        : (p.category && p.category.toLowerCase().includes(searchText))
 
       return (
-        p.name.toLowerCase().includes(text.toLowerCase()) ||
-        (p.brand && p.brand.toLowerCase().includes(text.toLowerCase())) ||
+        p.name.toLowerCase().includes(searchText) ||
+        (p.brand && p.brand.toLowerCase().includes(searchText)) ||
         categoryMatch
       );
     }));

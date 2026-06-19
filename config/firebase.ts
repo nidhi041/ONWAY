@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp } from 'firebase/app';
 // @ts-ignore
 import { Auth, getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache } from 'firebase/firestore';
 import { Platform } from 'react-native';
 
 const firebaseConfig = {
@@ -28,14 +28,17 @@ if (Platform.OS !== 'web') {
   auth = getAuth(app);
 }
 
-// Initialize Firestore with offline persistence
+// Initialize Firestore
+// React Native JS SDK does not support IndexedDB, so persistentLocalCache fails and warns.
+// We use memoryLocalCache for React Native, which stops the console error.
 export const db = Platform.OS === 'web'
   ? initializeFirestore(app, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
     })
   : initializeFirestore(app, {
+      localCache: memoryLocalCache(),
       experimentalForceLongPolling: true, // improves connectivity on Android
     });
 
-export { auth };
+export { auth, firebaseConfig };
 export default app;

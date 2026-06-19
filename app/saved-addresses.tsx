@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -5,21 +6,23 @@ import {
     Alert,
     ActivityIndicator,
     Modal,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
-} from 'react-native';
+    View } from 'react-native';
 import { useAddresses } from '@/hooks/useFirestore';
+import * as Location from 'expo-location';
 
 interface AddressForm {
   type: 'home' | 'work';
   name: string;
-  address: string;
   phone: string;
+  apartment: string;
+  building: string;
+  landmark: string;
+  pincode: string;
 }
 
 const AddressCard = ({
@@ -86,11 +89,15 @@ export default function SavedAddressesScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [formData, setFormData] = useState<AddressForm>({
     type: 'home',
     name: '',
-    address: '',
     phone: '',
+    apartment: '',
+    building: '',
+    landmark: '',
+    pincode: '',
   });
 
   const handleAddAddress = () => {
@@ -98,8 +105,11 @@ export default function SavedAddressesScreen() {
     setFormData({
       type: 'home',
       name: '',
-      address: '',
       phone: '',
+      apartment: '',
+      building: '',
+      landmark: '',
+      pincode: '',
     });
     setModalVisible(true);
   };
@@ -109,28 +119,72 @@ export default function SavedAddressesScreen() {
     setFormData({
       type: address.type,
       name: address.name,
-      address: address.address,
       phone: address.phone,
+      apartment: address.apartment || '',
+      building: address.building || '',
+      landmark: address.landmark || '',
+      pincode: address.pincode || '',
     });
     setModalVisible(true);
   };
 
+  const handleDetectLocation = async () => {
+    setIsDetectingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Please allow location access to auto-detect your address.');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const geocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      if (geocode && geocode.length > 0) {
+        const result = geocode[0];
+        setFormData((prev) => ({
+          ...prev,
+          pincode: result.postalCode || prev.pincode,
+          landmark: result.street || result.name || prev.landmark,
+          building: result.subregion || result.city || prev.building, // Fallback if applicable
+        }));
+      } else {
+        Alert.alert('Location Not Found', 'Could not detect your exact address details.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to detect location. Please enter your details manually.');
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
+
   const handleSaveAddress = async () => {
-    if (!formData.name || !formData.address || !formData.phone) {
-      Alert.alert('Error', 'Please fill all fields');
+    if (!formData.name || !formData.phone || !formData.apartment || !formData.building || !formData.pincode) {
+      Alert.alert('Error', 'Please fill all required fields');
+      return;
+    }
+
+    if (formData.pincode.length !== 6) {
+      Alert.alert('Error', 'Please enter a valid 6-digit pincode');
       return;
     }
 
     setIsSaving(true);
     try {
+      const formattedAddress = `${formData.apartment}, ${formData.building}${formData.landmark ? `, ${formData.landmark}` : ''} - ${formData.pincode}`;
+      const addressDataToSave = { ...formData, address: formattedAddress };
+
       if (editingAddress) {
         await updateAddress(editingAddress.id, {
-          ...formData,
+          ...addressDataToSave,
           isDefault: editingAddress.isDefault,
         } as any);
       } else {
         await addAddress({
-          ...formData,
+          ...addressDataToSave,
           isDefault: addresses.length === 0,
         } as any);
       }
@@ -291,19 +345,67 @@ export default function SavedAddressesScreen() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={[styles.label, { color: Colors.light.text }]}>
-                  Full Address
-                </Text>
+                <TouchableOpacity
+                  style={styles.detectLocationBtn}
+                  onPress={handleDetectLocation}
+                  disabled={isDetectingLocation}
+                  activeOpacity={0.8}
+                >
+                  {isDetectingLocation ? (
+                    <ActivityIndicator size="small" color="#35aeff" />
+                  ) : (
+                    <>
+                      <Text style={styles.detectLocationIcon}>📍</Text>
+                      <Text style={styles.detectLocationText}>Use Current Location</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <Text style={[styles.label, { color: Colors.light.text }]}>Apartment No. & Block *</Text>
                 <TextInput
                   style={[styles.input, { color: Colors.light.text }]}
-                  placeholder="Enter your complete address"
+                  placeholder="e.g. Flat 4B, Block A"
                   placeholderTextColor="#999"
-                  value={formData.address}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, address: text })
-                  }
-                  multiline
-                  numberOfLines={3}
+                  value={formData.apartment}
+                  onChangeText={(text) => setFormData({ ...formData, apartment: text })}
+                  editable={!isSaving}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: Colors.light.text }]}>Building / Society Name *</Text>
+                <TextInput
+                  style={[styles.input, { color: Colors.light.text }]}
+                  placeholder="e.g. Sunrise Apartments"
+                  placeholderTextColor="#999"
+                  value={formData.building}
+                  onChangeText={(text) => setFormData({ ...formData, building: text })}
+                  editable={!isSaving}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: Colors.light.text }]}>Nearby Landmark (Optional)</Text>
+                <TextInput
+                  style={[styles.input, { color: Colors.light.text }]}
+                  placeholder="e.g. Near Metro Station"
+                  placeholderTextColor="#999"
+                  value={formData.landmark}
+                  onChangeText={(text) => setFormData({ ...formData, landmark: text })}
+                  editable={!isSaving}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: Colors.light.text }]}>Pincode *</Text>
+                <TextInput
+                  style={[styles.input, { color: Colors.light.text }]}
+                  placeholder="6-digit pincode"
+                  placeholderTextColor="#999"
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  value={formData.pincode}
+                  onChangeText={(text) => setFormData({ ...formData, pincode: text.replace(/[^0-9]/g, '') })}
                   editable={!isSaving}
                 />
               </View>
@@ -592,6 +694,26 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: 'white',
     fontSize: 15,
+    fontWeight: '700',
+  },
+  detectLocationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#e3f2fd',
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#35aeff',
+    marginBottom: 16,
+    gap: 8,
+  },
+  detectLocationIcon: {
+    fontSize: 16,
+  },
+  detectLocationText: {
+    color: '#35aeff',
+    fontSize: 14,
     fontWeight: '700',
   },
 });

@@ -1,6 +1,7 @@
 import { Product } from '@/constants/products';
 import { C } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { isProductAvailable } from '@/hooks/useFirestore';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -12,8 +13,9 @@ export default function AddToCartButton({ product, size = 'normal' }: Props) {
   const qty = item?.quantity ?? 0;
   const sm = size === 'small';
   const stock = (product as any).stock ?? 99; // fallback to 99 if stock not defined
+  const available = isProductAvailable(product);
 
-  if (stock === 0) {
+  if (!available) {
     return (
       <View style={[s.outOfStock, sm && s.btnSm]}>
         <Text style={[s.outOfStockText, sm && s.btnTextSm]}>Out of Stock</Text>

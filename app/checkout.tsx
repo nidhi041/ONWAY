@@ -1,6 +1,7 @@
 import { C, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useLocationContext } from '@/context/LocationContext';
 import { createOrder, PaymentMethod, ShippingAddress } from '@/services/ordersService';
 import { createRazorpayOrder, logPaymentFailure } from '@/services/razorpayService';
 import { useRouter } from 'expo-router';
@@ -133,6 +134,7 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const { cartItems, clearCart } = useCart();
   const { user } = useAuth();
+  const { location } = useLocationContext();
   const { addresses, loading: addressesLoading } = useAddresses();
   const [currentStep, setCurrentStep] = useState(1); // 1: Address, 2: Payment, 3: Review
   const [selectedAddress, setSelectedAddress] = useState<string>('');
@@ -214,7 +216,8 @@ export default function CheckoutScreen() {
           paymentMethod,
           subtotal,
           deliveryFee,
-          tax
+          tax,
+          location || undefined
         );
 
         await clearCart();
@@ -241,6 +244,7 @@ export default function CheckoutScreen() {
         cartItems,
         shippingAddress,
         paymentMethod,
+        storeLocation: location || undefined,
       });
 
       // Step 2: Navigate to WebView payment gateway
@@ -260,6 +264,7 @@ export default function CheckoutScreen() {
           userId: user.id,
           paymentMethod: selectedPayment,
           shippingAddress: JSON.stringify(shippingAddress),
+          storeLocation: location || undefined,
         },
       });
 

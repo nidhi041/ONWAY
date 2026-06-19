@@ -1,0 +1,83 @@
+appId: com.arunkumar6684.OnWay
+---
+# ─── Lab Test Booking Flow E2E Test ──────────────────────────────────────────────
+# Tests: Home → Lab Tests → Fill Patient Details → Address → Confirm
+
+- launchApp:
+    clearState: false
+
+# Verify Home screen loaded
+- assertVisible: "MedBix"
+
+# Tap on "Labtests" quick action
+- tapOn:
+    text: "Labtests"
+    timeout: 5000
+
+# Verify Step 1 screen loaded
+- assertVisible:
+    text: "Step 1"
+    timeout: 5000
+
+# Fill in patient name
+- tapOn:
+    text: "Enter patient name"
+    optional: true
+- inputText: "Arun Kumar"
+
+# Fill in mobile number
+- tapOn:
+    text: "Enter mobile"
+    optional: true
+- inputText: "9876543210"
+
+# Fill in age
+- tapOn:
+    text: "Enter age"
+    optional: true
+- inputText: "25"
+
+# Select at least one test (tap on first available test)
+- tapOn:
+    text: "CBC"
+    optional: true
+
+# Tap Proceed to Step 2
+- tapOn:
+    text: "Proceed"
+    optional: true
+
+# Verify Step 2 (Address) screen loaded
+- assertVisible:
+    text: "Step 2"
+    timeout: 5000
+    optional: true
+
+# Fill apartment
+- tapOn:
+    text: "Flat 402, Block B"
+    optional: true
+- inputText: "Flat 301, Tower A"
+
+# Fill building
+- tapOn:
+    text: "Royal Residency"
+    optional: true
+- inputText: "Green Heights Society"
+
+# Fill pincode
+- tapOn:
+    text: "6-digit PIN"
+    optional: true
+- inputText: "400001"
+
+# Tap Confirm Booking
+- tapOn:
+    text: "Confirm Booking"
+    optional: true
+
+# Verify booking confirmation alert
+- assertVisible:
+    text: "Booking Confirmed"
+    timeout: 10000
+    optional: true

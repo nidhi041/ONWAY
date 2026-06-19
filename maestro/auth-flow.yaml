@@ -1,0 +1,40 @@
+appId: com.arunkumar6684.OnWay
+---
+# ─── Auth Flow E2E Test ─────────────────────────────────────────────────────────
+# Tests: App Launch → Navigate to Profile → Login Screen → Enter Credentials
+
+- launchApp:
+    clearState: true
+
+# Verify Home screen loaded
+- assertVisible: "MedBix"
+
+# Navigate to Profile (tap avatar in top-right corner)
+- tapOn:
+    text: "👤"
+    optional: true
+
+# If we're on the Profile screen, we should see login-related UI
+# (either profile info or a login prompt)
+- assertVisible:
+    text: "Login"
+    optional: true
+
+# Enter email
+- tapOn:
+    text: "Enter your email"
+- inputText: "testuser@medbix.com"
+
+# Enter password
+- tapOn:
+    text: "Enter your password"
+- inputText: "Test@12345"
+
+# Tap Login button
+- tapOn:
+    text: "Login"
+
+# Wait for navigation back to home
+- assertVisible:
+    text: "MedBix"
+    timeout: 10000

@@ -44,6 +44,7 @@ export interface Order {
   items: OrderItem[];
   shippingAddress: ShippingAddress;
   paymentMethod: PaymentMethod;
+  storeLocation?: string;
   subtotal: number;
   deliveryFee: number;
   tax: number;
@@ -66,7 +67,8 @@ export const createOrder = async (
   paymentMethod: PaymentMethod,
   subtotal: number,
   deliveryFee: number = 0,
-  tax: number
+  tax: number,
+  storeLocation?: string
 ): Promise<string> => {
   try {
     const ordersRef = collection(db, 'users', userId, 'orders');
@@ -88,6 +90,7 @@ export const createOrder = async (
       items: orderItems,
       shippingAddress,
       paymentMethod,
+      storeLocation,
       subtotal,
       deliveryFee,
       tax,

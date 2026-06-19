@@ -14,6 +14,8 @@ import {
   getDocs,
   limit,
   startAfter,
+  orderBy,
+  or,
 } from 'firebase/firestore';
 
 // ============================================
@@ -395,7 +397,13 @@ export interface Product {
   stock: number;
 }
 
-export const useProducts = (category?: string, fetchLimit?: number) => {
+export const isProductAvailable = (p: any) => {
+  const stock = p.stock ?? 99;
+  const hasMRP = p.price && p.price > 0;
+  return stock > 0 && hasMRP;
+};
+
+export const useProducts = (category?: string, fetchLimit?: number, filterOutUnavailable: boolean = true) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -410,10 +418,20 @@ export const useProducts = (category?: string, fetchLimit?: number) => {
       
       let constraints: any[] = [];
       if (category) {
-        constraints.push(where('category', 'array-contains', category));
+        constraints.push(
+          or(
+            where('category', 'array-contains', category),
+            where('category', '==', category)
+          )
+        );
+      } else {
+        constraints.push(orderBy('name'));
       }
+      
       if (fetchLimit) {
-        constraints.push(limit(fetchLimit));
+        // Fetch up to 1000 items from Firestore if we are filtering client-side
+        // so that we don't accidentally return 0 items if the first N items are out of stock.
+        constraints.push(limit(filterOutUnavailable ? 1000 : fetchLimit));
       }
 
       const q = query(productsRef, ...constraints);
@@ -424,7 +442,12 @@ export const useProducts = (category?: string, fetchLimit?: number) => {
         ...doc.data(),
       })) as Product[];
       
-      setProducts(data);
+      let finalData = data;
+      if (filterOutUnavailable) {
+        finalData = data.filter(isProductAvailable);
+      }
+      
+      setProducts(finalData);
       if (snapshot.docs.length > 0) {
         setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
       }
@@ -433,6 +456,7 @@ export const useProducts = (category?: string, fetchLimit?: number) => {
       }
       setLoading(false);
     } catch (err) {
+      console.error("🔥 FIRESTORE FETCH ERROR:", err);
       setError(err instanceof Error ? err.message : 'Failed to fetch products');
       setLoading(false);
     }
@@ -447,11 +471,19 @@ export const useProducts = (category?: string, fetchLimit?: number) => {
       
       let constraints: any[] = [];
       if (category) {
-        constraints.push(where('category', '==', category));
+        constraints.push(
+          or(
+            where('category', 'array-contains', category),
+            where('category', '==', category)
+          )
+        );
+      } else {
+        constraints.push(orderBy('name'));
       }
+      
       constraints.push(startAfter(lastVisible));
       if (fetchLimit) {
-        constraints.push(limit(fetchLimit));
+        constraints.push(limit(filterOutUnavailable ? 1000 : fetchLimit));
       }
 
       const q = query(productsRef, ...constraints);
@@ -462,8 +494,13 @@ export const useProducts = (category?: string, fetchLimit?: number) => {
         ...doc.data(),
       })) as Product[];
       
-      if (data.length > 0) {
-        setProducts((prev) => [...prev, ...data]);
+      let finalData = data;
+      if (filterOutUnavailable) {
+        finalData = data.filter(isProductAvailable);
+      }
+      
+      if (finalData.length > 0) {
+        setProducts((prev) => [...prev, ...finalData]);
         setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
       }
       
@@ -472,6 +509,7 @@ export const useProducts = (category?: string, fetchLimit?: number) => {
       }
       setLoadingMore(false);
     } catch (err) {
+      console.error("🔥 FIRESTORE LOAD MORE ERROR:", err);
       setError(err instanceof Error ? err.message : 'Failed to load more products');
       setLoadingMore(false);
     }
@@ -630,4 +668,56 @@ export const useCart = () => {
     updateCartQuantity,
     clearCart,
   };
+};
+
+// ============================================
+// DOCTORS HOOKS (Health Consultants)
+// ============================================
+
+export interface Doctor {
+  id: string;
+  name: string;
+  specialty: string;
+  whatsapp: string;
+  imageUrl: string;
+  available: boolean;
+  experience: string;
+  rating: number;
+}
+
+export const useDoctors = () => {
+  const { user } = useAuth();
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const doctorsRef = collection(db, 'doctors');
+      const q = query(doctorsRef, where('available', '==', true));
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Doctor[];
+        // Sort by rating descending
+        data.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        setDoctors(data);
+        setLoading(false);
+      });
+
+      return unsubscribe;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch doctors');
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  return { doctors, loading, error };
 };

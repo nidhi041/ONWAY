@@ -2,53 +2,24 @@ import { C, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/config/firebase';
-import * as Google from 'expo-auth-session/providers/google';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
     ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
     ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, loginWithGoogle } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: '40420149902-40c5dv01ohpul08gknr12ef6ftl2cu2p.apps.googleusercontent.com',
-    clientId: '40420149902-40c5dv01ohpul08gknr12ef6ftl2cu2p.apps.googleusercontent.com',
-  });
-
-  const handleGoogleLogin = useCallback(async (idToken: string) => {
-    setLoading(true);
-    try { await loginWithGoogle(idToken); router.replace('/profile'); }
-    catch (e) { Alert.alert('Login Failed', e instanceof Error ? e.message : 'Google login failed'); }
-    finally { setLoading(false); }
-  }, [loginWithGoogle, router]);
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      if (id_token) handleGoogleLogin(id_token);
-    }
-  }, [response, handleGoogleLogin]);
-
-  useEffect(() => {
-    if (request?.redirectUri) {
-      console.log('--- GOOGLE REDIRECT URI FOR LOGIN ---');
-      console.log(request.redirectUri);
-      console.log('------------------------------------');
-    }
-  }, [request]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -165,24 +136,10 @@ export default function LoginScreen() {
                 : <Text style={st.primaryBtnText}>Sign In</Text>}
             </TouchableOpacity>
 
-            {/* Divider */}
-            <View style={st.divider}>
-              <View style={st.dividerLine} />
-              <Text style={st.dividerText}>or continue with</Text>
-              <View style={st.dividerLine} />
-            </View>
 
-            {/* Google */}
-            <TouchableOpacity
-              style={[st.googleBtn, loading && { opacity: 0.65 }]}
-              onPress={() => promptAsync()}
-              disabled={!request || loading}
-              activeOpacity={0.88}
-            >
-              <Text style={st.googleG}>G</Text>
-              <Text style={st.googleBtnText}>Continue with Google</Text>
-            </TouchableOpacity>
           </View>
+
+
 
           <View style={st.footer}>
             <Text style={st.footerText}>{"Don't have an account? "}</Text>
@@ -250,17 +207,6 @@ const st = StyleSheet.create({
   },
   primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
-  divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: C.border },
-  dividerText: { fontSize: 12, color: C.inkMuted, fontWeight: '500' },
-
-  googleBtn: {
-    height: 52, backgroundColor: C.surface, borderWidth: 1.5,
-    borderColor: C.border, borderRadius: 14,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-  },
-  googleG: { fontSize: 18, fontWeight: '800', color: '#4285F4' },
-  googleBtnText: { fontSize: 15, fontWeight: '600', color: C.ink },
 
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   footerText: { fontSize: 14, color: C.inkSub },

@@ -38,9 +38,9 @@ const ProductCard = React.memo(({ product, onPress }: { product: Product; onPres
         <Text style={styles.productName}>{product.name}</Text>
         <View style={styles.priceRow}>
           <Text style={styles.price}>₹{product.price}</Text>
-          {product.originalPrice && (
+          {product.originalPrice ? (
             <Text style={styles.originalPrice}>₹{product.originalPrice}</Text>
-          )}
+          ) : null}
         </View>
         <Text style={styles.taxText}>Incl. Taxes</Text>
         <AddToCartButton product={product} />
@@ -52,8 +52,8 @@ const ProductCard = React.memo(({ product, onPress }: { product: Product; onPres
 export default function CategoryScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const categoryName = (params.name as string) || 'Medicines';
-  const { products: firestoreProducts, loading } = useProducts(categoryName);
+  const categoryName = (params.name as string) || 'Medicine';
+  const { products: firestoreProducts, loading, loadMore, hasMore, loadingMore, error } = useProducts(categoryName, 16);
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all');
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
   const [products, setProducts] = useState<Product[]>([]);
@@ -172,7 +172,14 @@ export default function CategoryScreen() {
   return (
     <View style={[styles.container, { backgroundColor: Colors.light.background }]}>
       <View style={styles.topBar} />
-      {loading ? (
+      {error ? (
+        <View style={styles.emptyContainer}>
+          <Text style={{ fontSize: 40, marginBottom: 10 }}>⚠️</Text>
+          <Text style={{ color: 'red', textAlign: 'center', fontSize: 14, fontWeight: '600' }}>
+            {error}
+          </Text>
+        </View>
+      ) : loading ? (
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.grid}>
             {[1, 2, 3, 4, 5, 6].map(i => (
@@ -206,6 +213,21 @@ export default function CategoryScreen() {
           maxToRenderPerBatch={6}
           windowSize={5}
           removeClippedSubviews={true}
+          ListFooterComponent={() => (
+            hasMore ? (
+              <TouchableOpacity
+                style={{ alignSelf: 'center', marginVertical: 20, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: C.blueLight, borderRadius: 8 }}
+                onPress={loadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <ActivityIndicator color={C.blue} />
+                ) : (
+                  <Text style={{ color: C.blue, fontWeight: '700' }}>Load More</Text>
+                )}
+              </TouchableOpacity>
+            ) : <View style={{ height: 30 }} />
+          )}
         />
       )}
     </View>

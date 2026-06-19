@@ -2,43 +2,115 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function to check if the user is an admin
+    // Check if the user is logged in AND is an admin in the admins collection OR adminUsers collection
     function isAdmin() {
-      return exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid));
+      return request.auth != null && (
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true) ||
+        (exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin') ||
+         // Fallback just in case role isn't explicitly set but they exist in adminUsers (from our previous fix)
+        (exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) && 
+         !("role" in get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data))
+      );
     }
 
-    match /adminUsers/{userId} {
-      allow read: if request.auth != null;
-      allow write: if false; 
+    // Check if the user is a staff member in the adminUsers collection
+    function isStaff() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'staff';
     }
 
-    // Allow users to read and write their own user document and all nested subcollections
-    match /users/{userId} {
-      allow read, write: if request.auth.uid == userId || isAdmin();
-      
-      match /addresses/{id} { allow read, write: if request.auth.uid == userId || isAdmin(); }
-      match /cart/{id} { allow read, write: if request.auth.uid == userId || isAdmin(); }
-      match /paymentMethods/{id} { allow read, write: if request.auth.uid == userId || isAdmin(); }
-      match /notifications/{id} { allow read, write: if request.auth.uid == userId || isAdmin(); }
-      
-      match /orders/{orderId} {
-        allow read: if request.auth.uid == userId || isAdmin();
-        allow create: if request.auth.uid == userId || isAdmin();
-        allow update: if (request.auth.uid == userId && 
-                     (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'totalAmount', 'paymentVerified', 'items']))) || isAdmin();
-        allow delete: if isAdmin();
-      }
+    // Check if the user is logged into the customer app and accessing their own data
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
     }
-    
-    // Allow public read for products, and admin write
-    match /products/{document=**} {
-      allow read: if true;
+
+    // 1. ADMINS COLLECTION
+    match /admins/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
       allow write: if isAdmin();
     }
-    
-    // Collection group query access for orders
+
+    // 1.5. STAFF/ADMIN USERS COLLECTION
+    match /adminUsers/{userId} {
+      allow read: if isOwner(userId) || isAdmin() || isStaff();
+      allow write: if isAdmin();
+    }
+
+    // 2. PRODUCTS COLLECTION
+    match /products/{productId} {
+      allow read: if true; 
+      allow write: if isAdmin();
+    }
+
+    // 3. USERS COLLECTION (Customer Profiles & Non-Order Subcollections)
+    match /users/{userId} {
+      // Allow Staff to READ user profiles so they can see customer names on orders
+      allow read: if isOwner(userId) || isAdmin() || isStaff();
+      // Only Owner and Admin can WRITE
+      allow write: if isOwner(userId) || isAdmin();
+      
+      // Explicitly allow users to manage their cart, addresses, payments, and notifications
+      match /cart/{cartItemId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      match /addresses/{addressId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      match /paymentMethods/{paymentId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      match /notifications/{notifId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      // 4. ORDERS (Stored as subcollections: /users/{userId}/orders/{orderId})
+      match /orders/{orderId} {
+        allow create: if isOwner(userId);
+        // Staff can READ orders. Admins can READ/WRITE
+        allow read: if isOwner(userId) || isAdmin() || isStaff();
+        
+        // Allow owners to update non-critical fields, and allow admins full access
+        allow update: if isAdmin() || (isOwner(userId) && 
+                     (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'totalAmount', 'paymentVerified', 'items'])));
+        allow delete: if isAdmin();
+      }
+
+      // 5. LAB APPOINTMENTS (Stored as subcollections: /users/{userId}/labAppointments/{appointmentId})
+      match /labAppointments/{appointmentId} {
+        allow create: if isOwner(userId);
+        allow read: if isOwner(userId) || isAdmin() || isStaff();
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // Allow Admin Dashboard to fetch ALL orders and lab appointments using collectionGroup queries
     match /{path=**}/orders/{orderId} {
-      allow read: if isAdmin();
+      // Allow Staff to fetch the collection group alongside Admins
+      allow read: if isAdmin() || isStaff();
+    }
+    match /{path=**}/labAppointments/{appointmentId} {
+      allow read: if isAdmin() || isStaff();
+      allow update: if isAdmin() || isStaff();
+    }
+
+    // 5. TOP-LEVEL ORDERS (If stored as a top-level collection: /orders/{orderId})
+    match /orders/{orderId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Staff can READ top level orders
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin() || isStaff();
+      
+      // Customers CANNOT modify or delete orders. Admins can do everything.
+      allow update, delete: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // 7. DOCTORS COLLECTION (Health Consultants for WhatsApp chat)
+    match /doctors/{doctorId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
   }
 }

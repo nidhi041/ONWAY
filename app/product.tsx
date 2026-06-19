@@ -2,7 +2,7 @@ import AddToCartButton from '@/components/AddToCartButton';
 import { Product } from '@/constants/products';
 import { C, shadow } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
-import { useProducts } from '@/hooks/useFirestore';
+import { useProducts, isProductAvailable } from '@/hooks/useFirestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -31,7 +31,7 @@ export default function ProductDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { addToCart, cartItems } = useCart();
-  const { products: allProducts } = useProducts();
+  const { products: allProducts } = useProducts(undefined, undefined, false);
   const [qty, setQty] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
@@ -52,7 +52,10 @@ export default function ProductDetailScreen() {
     const id = params.id as string;
     if (id && allProducts.length > 0) {
       const p = allProducts.find(x => x.id === id);
-      if (p) { setProduct(p); setRelated(allProducts.filter(x => x.id !== id).slice(0, 4)); }
+      if (p) { 
+        setProduct(p); 
+        setRelated(allProducts.filter(x => x.id !== id && isProductAvailable(x)).slice(0, 4)); 
+      }
     }
     setLoading(false);
   }, [params.id, allProducts]);
@@ -130,7 +133,7 @@ export default function ProductDetailScreen() {
           {/* Price */}
           <View style={st.priceRow}>
             <Text style={st.price}>₹{product.price}</Text>
-            {product.originalPrice && product.originalPrice > product.price && (
+            {!!product.originalPrice && product.originalPrice > product.price && (
               <Text style={st.origPrice}>₹{product.originalPrice}</Text>
             )}
             {disc > 0 && (
@@ -140,15 +143,7 @@ export default function ProductDetailScreen() {
             )}
           </View>
 
-          {/* Delivery info */}
-          <View style={st.deliveryBox}>
-            <View style={st.deliveryBoxIcon}><Text style={{ fontSize: 20 }}>🚚</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={st.deliveryBoxTitle}>Free Express Delivery</Text>
-              <Text style={st.deliveryBoxSub}>Estimated arrival in 10–20 minutes</Text>
-            </View>
-            <Text style={st.deliveryBoxArrow}>›</Text>
-          </View>
+
 
           {/* Quantity */}
           <View style={st.qtySection}>
@@ -206,8 +201,13 @@ export default function ProductDetailScreen() {
 
       {/* Actions */}
       <View style={st.actionsBar}>
-        <TouchableOpacity style={st.buyNowBtn} onPress={() => { addAll(); router.push('/checkout'); }} activeOpacity={0.88}>
-          <Text style={st.buyNowText}>Buy Now</Text>
+        <TouchableOpacity 
+          style={[st.buyNowBtn, !isProductAvailable(product) && { opacity: 0.5, borderColor: C.border }]} 
+          onPress={() => { if (isProductAvailable(product)) { addAll(); router.push('/checkout'); } }} 
+          activeOpacity={0.88}
+          disabled={!isProductAvailable(product)}
+        >
+          <Text style={[st.buyNowText, !isProductAvailable(product) && { color: C.inkMuted }]}>Buy Now</Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <AddToCartButton product={product} />

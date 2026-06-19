@@ -11,6 +11,7 @@ export interface RazorpayOrderRequest {
   cartItems: any[];
   shippingAddress: ShippingAddress;
   paymentMethod: PaymentMethod;
+  storeLocation?: string;
 }
 
 export interface RazorpayOrderResponse {
@@ -32,6 +33,7 @@ export interface PaymentVerificationRequest {
   subtotal: number;
   deliveryFee: number;
   tax: number;
+  storeLocation?: string;
 }
 
 /**
